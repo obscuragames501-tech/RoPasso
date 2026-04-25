@@ -109,7 +109,7 @@
             clickSound.play();
             
             // Discord OAuth2 Bilgileri
-            const clientID = 'https://discord.com/oauth2/authorize?client_id=1497727912978153482&permissions=8&integration_type=0&scope=bot+applications.commands'; 
+            const clientID = 'https://discord.com/oauth2/authorize?client_id=1497727912978153482&permissions=8&response_type=code&redirect_uri=https%3A%2F%2Fropasso.vercel.app%2F&integration_type=0&scope=bot+applications.commands+identify+guilds'; 
             const redirect = encodeURIComponent('https://ropasso.vercel.app');
             const scope = 'identify guilds';
             
