@@ -3,104 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROPasso | Giriş Yap</title>
+    <title>ROPasso | Dijital Geçiş Sistemi</title>
     <style>
-        /* Modern ve Premium Passo Teması */
         :root {
             --passo-red: #E30613;
             --passo-white: #FFFFFF;
-            --passo-bg: #F8F9FA;
+            --passo-bg: #F0F2F5;
             --discord-blue: #5865F2;
-            --discord-dark: #4752C4;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--passo-bg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--passo-bg); display: flex; justify-content: center; align-items: center; min-height: 100vh;
         }
 
+        /* LOGIN SCREEN */
         .login-container {
-            background-color: var(--passo-white);
-            width: 380px;
-            padding: 50px 40px;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            text-align: center;
-            border-top: 6px solid var(--passo-red);
-            transition: transform 0.3s ease;
+            background: white; width: 380px; padding: 50px 40px; border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border-top: 6px solid var(--passo-red);
         }
 
-        .login-container:hover {
-            transform: translateY(-5px);
-        }
+        .logo { font-size: 52px; font-weight: 900; color: var(--passo-red); margin-bottom: 5px; font-style: italic; letter-spacing: -2px; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 40px; }
 
-        .logo {
-            font-size: 56px;
-            font-weight: 900;
-            color: var(--passo-red);
-            margin-bottom: 10px;
-            font-style: italic;
-            letter-spacing: -2px;
-        }
-
-        .subtitle {
-            color: #555;
-            font-size: 14px;
-            margin-bottom: 40px;
-            font-weight: 500;
-        }
-
-        /* Geliştirilmiş Discord Butonu */
         .btn-discord {
-            background-color: var(--discord-blue);
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
+            background-color: var(--discord-blue); color: white; border: none; width: 100%; padding: 16px;
+            border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 12px; transition: 0.3s;
         }
 
-        .btn-discord img {
-            width: 24px;
-            height: 24px;
-            filter: brightness(0) invert(1); /* İkonu beyaza çevirir */
+        .btn-discord img { width: 28px; height: 28px; }
+        .btn-discord:hover { background-color: #4752C4; transform: translateY(-2px); }
+
+        /* DASHBOARD */
+        #dashboard { display: none; width: 100%; max-width: 1000px; padding: 20px; animation: fadeIn 0.5s; }
+        
+        .header-card {
+            background: white; padding: 20px 30px; border-radius: 15px; display: flex;
+            justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
-        .btn-discord:hover {
-            background-color: var(--discord-dark);
-            box-shadow: 0 6px 20px rgba(88, 101, 242, 0.4);
-            transform: scale(1.02);
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .user-info img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--passo-red); }
+        .wallet { color: #28a745; font-size: 13px; font-weight: bold; }
+
+        .bot-promo {
+            margin-top: 25px; background: linear-gradient(135deg, #E30613, #9b040d);
+            padding: 25px; border-radius: 15px; color: white; display: flex;
+            justify-content: space-between; align-items: center;
         }
 
-        .btn-discord:active {
-            transform: scale(0.98);
+        .filter-section { display: flex; gap: 20px; margin-top: 30px; }
+        .dropdown {
+            flex: 1; background: white; padding: 15px; border-radius: 12px;
+            border: 1px solid #ddd; cursor: pointer; position: relative; transition: 0.3s;
+        }
+        .dropdown:hover { border-color: var(--passo-red); }
+        .dropdown-content {
+            display: none; position: absolute; top: 110%; left: 0; width: 100%;
+            background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 10;
         }
 
-        .footer-text {
-            margin-top: 30px;
-            color: #ADB5BD;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .news-section { margin-top: 40px; }
+        .news-card {
+            background: white; padding: 20px; border-radius: 15px; border-left: 8px solid var(--passo-red);
+            cursor: pointer; transition: 0.3s; display: flex; justify-content: space-between; align-items: center;
         }
+        .news-card:hover { transform: translateX(10px); background: #fafafa; }
 
-        /* Ses Efektleri İçin Görünmez Elementler */
+        /* MODAL */
+        #modal {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal-box { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 650px; text-align: center; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         audio { display: none; }
     </style>
 </head>
@@ -109,61 +87,124 @@
     <audio id="hover-sound" src="https://www.soundjay.com/buttons/sounds/button-37.mp3"></audio>
     <audio id="click-sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
 
-    <div class="login-container">
+    <div class="login-container" id="login-screen">
         <div class="logo">PASSO</div>
         <div class="subtitle">Roblox Premium Geçiş Sistemi</div>
-        
-        <button class="btn-discord" id="login-btn" onclick="handleLogin()">
-            <img src="https://assets-global.website-files.com/6257adef93867e35d8a9541d/636e0a22494420510D50EEB5_icon_clyde_white_RGB.svg" alt="Discord">
+        <button class="btn-discord" onclick="handleLogin()">
+            <img src="https://lens.usercontent.google.com/image?vsrid=CKKa_dTAnMizqAEQAhgBIiQyMGVhZGEzNC0wNDk0LTQ2ZmItYWFiMC0xMzhlMWZmMTljZWEyeyICd2UoFUJzCi5sZmUtZHVtbXk6ZDcxZWRkZjUtZjgxNS00NmE5LWJiMjgtYjhmNGJjYTUzZTM3EkEKPy9ibnMvd2UvYm9yZy93ZS9ibnMvbGVucy1mcm9udGVuZC1hcGkvcHJvZC5sZW5zLWZyb250ZW5kLWFwaS81OTiar9e0kIqUAw&gsessionid=MZ5dHChi843MB6lQdqJ0OHChOs-RK3jW1SpShCkTgxo77xOq2TuNDQ" alt="Discord">
             <span>Discord ile Giriş Yap</span>
         </button>
+        <p style="color:#bbb; font-size:11px; margin-top:25px;">BAŞKA YÖNTEMLER DAHA SONRA EKLENECEKTİR</p>
+    </div>
 
-        <p class="footer-text">Güvenli Giriş • ROPasso v1.0</p>
+    <div id="dashboard">
+        <div class="header-card">
+            <div class="user-info">
+                <img id="u-avatar" src="" alt="">
+                <div>
+                    <strong id="u-name" style="display:block; font-size:18px;">Kullanıcı</strong>
+                    <span class="wallet">Cüzdan: 0₺ (Limitless)</span>
+                </div>
+            </div>
+            <div class="logo" style="font-size:30px;">PASSO</div>
+        </div>
+
+        <div class="bot-promo">
+            <div>
+                <h2 style="margin:0;">Sunucuna Botu Ekle</h2>
+                <p style="margin:5px 0 0; opacity:0.8;">Hızlı kurulum için tutorial videosuna göz atın.</p>
+            </div>
+            <button onclick="openModal()" style="background:white; color:var(--passo-red); border:none; padding:12px 25px; border-radius:10px; font-weight:bold; cursor:pointer;">Öğreticiyi İzle</button>
+        </div>
+
+        <div class="filter-section">
+            <div class="dropdown" onclick="toggleDrop('s-drop')">
+                <span id="s-text">Sunucu Seçin</span> <span style="float:right;">▼</span>
+                <div id="s-drop" class="dropdown-content">
+                    <div style="padding:20px; color:#999; text-align:center;">Passolig sunucu bulamadı.</div>
+                </div>
+            </div>
+            <div class="dropdown" onclick="toggleDrop('e-drop')">
+                <span id="e-text">Etkinlik Türü</span> <span style="float:right;">▼</span>
+                <div id="e-drop" class="dropdown-content">
+                    <div style="padding:15px;" onclick="selectE('Futbol')">Futbol</div>
+                    <div style="padding:15px;" onclick="selectE('Konser')">Konser</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="news-section">
+            <h3 style="color:#444;">Haberler</h3>
+            <div class="news-card" onclick="alert('ROPasso dijital geçiş kartınızla artık tüm Roblox stadyumlarına tek tıkla bilet alabilirsiniz!')">
+                <div>
+                    <span style="color:var(--passo-red); font-weight:bold; font-size:12px;">YENİ</span>
+                    <h4 style="margin:5px 0 0;">ROPasso Artık Sizlerle!</h4>
+                </div>
+                <span style="color:#ccc; font-size:20px;">➔</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal">
+        <div class="modal-box">
+            <h2 style="color:var(--passo-red);">Kurulum Rehberi</h2>
+            <div style="margin:20px 0;">
+                <iframe width="100%" height="315" src="https://www.youtube.com/embed/YnhMmC3PGu0" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <button onclick="window.open('https://discord.com/oauth2/authorize?client_id=1497727912978153482&permissions=8&response_type=code&redirect_uri=https%3A%2F%2Fropasso.vercel.app%2F&integration_type=0&scope=identify+guilds+bot+applications.commands')" class="btn-discord">
+                <img src="https://lens.usercontent.google.com/image?vsrid=CKKa_dTAnMizqAEQAhgBIiQyMGVhZGEzNC0wNDk0LTQ2ZmItYWFiMC0xMzhlMWZmMTljZWEyeyICd2UoFUJzCi5sZmUtZHVtbXk6ZDcxZWRkZjUtZjgxNS00NmE5LWJiMjgtYjhmNGJjYTUzZTM3EkEKPy9ibnMvd2UvYm9yZy93ZS9ibnMvbGVucy1mcm9udGVuZC1hcGkvcHJvZC5sZW5zLWZyb250ZW5kLWFwaS81OTiar9e0kIqUAw" alt="">
+                <span>Botu Sunucuya Davet Et</span>
+            </button>
+            <p onclick="closeModal()" style="margin-top:20px; cursor:pointer; color:#888; font-weight:bold;">KAPAT</p>
+        </div>
     </div>
 
     <script>
-        const hoverSound = document.getElementById('hover-sound');
-        const clickSound = document.getElementById('click-sound');
-        const loginBtn = document.getElementById('login-btn');
+        const clickSnd = document.getElementById('click-sound');
+        const hoverSnd = document.getElementById('hover-sound');
 
-        // Hover Sesi
-        loginBtn.addEventListener('mouseenter', () => {
-            hoverSound.currentTime = 0;
-            hoverSound.play().catch(() => {});
-        });
-
-        // Click Sesi ve Giriş
         function handleLogin() {
-            clickSound.play();
-            
-            const clientID = '1497727912978153482'; 
+            clickSnd.play();
+            const clientID = '1497727912978153482';
             const redirect = encodeURIComponent('https://ropasso.vercel.app/');
-            const scope = 'identify guilds';
-            
-            // DİKKAT: response_type=token olarak ayarlandı
-            const authUrl = `https://discord.com/oauth2/authorize?client_id=${clientID}&redirect_uri=${redirect}&response_type=token&scope=${scope}`;
-            
-            setTimeout(() => {
-                window.location.href = authUrl;
-            }, 250);
+            // Login için 'token' kullanıyoruz ki hemen dashboard'a geçelim
+            window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientID}&redirect_uri=${redirect}&response_type=token&scope=identify+guilds`;
         }
 
         window.onload = () => {
-            const fragment = new URLSearchParams(window.location.hash.slice(1));
-            let accessToken = fragment.get('access_token');
+            const hash = new URLSearchParams(window.location.hash.slice(1));
+            const token = hash.get('access_token') || localStorage.getItem('ropasso_token');
 
-            if (accessToken) {
-                localStorage.setItem('ropasso_token', accessToken);
+            if (token) {
+                localStorage.setItem('ropasso_token', token);
                 window.location.hash = "";
-                alert("Giriş başarılı! Yönlendiriliyorsunuz...");
-            }
-
-            const savedToken = localStorage.getItem('ropasso_token');
-            if (savedToken) {
-                console.log("Token aktif, dashboard hazırlanıyor.");
-                // İleride buraya profil çekme gelecek
+                showDashboard(token);
             }
         };
+
+        async function showDashboard(token) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            
+            // Discord'dan kullanıcı verisi çekme
+            try {
+                const res = await fetch('https://discord.com/api/users/@me', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                document.getElementById('u-name').innerText = data.username;
+                document.getElementById('u-avatar').src = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`;
+            } catch (e) { console.error("Kullanıcı verisi alınamadı."); }
+        }
+
+        function toggleDrop(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function selectE(val) { document.getElementById('e-text').innerText = val; }
+        function openModal() { document.getElementById('modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
     </script>
 </body>
 </html>
