@@ -5,63 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ROPasso | Giriş Yap</title>
     <style>
-        /* Genel Stil ve Passo Kırmızısı */
+        /* Modern ve Premium Passo Teması */
         :root {
             --passo-red: #E30613;
             --passo-white: #FFFFFF;
-            --passo-bg: #F5F5F5;
+            --passo-bg: #F8F9FA;
             --discord-blue: #5865F2;
+            --discord-dark: #4752C4;
         }
 
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--passo-bg);
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            overflow: hidden;
         }
 
         .login-container {
             background-color: var(--passo-white);
-            width: 400px;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 380px;
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
             text-align: center;
-            border-top: 5px solid var(--passo-red);
+            border-top: 6px solid var(--passo-red);
+            transition: transform 0.3s ease;
+        }
+
+        .login-container:hover {
+            transform: translateY(-5px);
         }
 
         .logo {
-            font-size: 48px;
+            font-size: 56px;
             font-weight: 900;
             color: var(--passo-red);
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             font-style: italic;
+            letter-spacing: -2px;
         }
 
+        .subtitle {
+            color: #555;
+            font-size: 14px;
+            margin-bottom: 40px;
+            font-weight: 500;
+        }
+
+        /* Geliştirilmiş Discord Butonu */
         .btn-discord {
             background-color: var(--discord-blue);
             color: white;
             border: none;
             width: 100%;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            transition: transform 0.1s, background-color 0.3s;
+            gap: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
+        }
+
+        .btn-discord img {
+            width: 24px;
+            height: 24px;
+            filter: brightness(0) invert(1); /* İkonu beyaza çevirir */
         }
 
         .btn-discord:hover {
-            background-color: #4752C4;
-            transform: translateY(-2px);
+            background-color: var(--discord-dark);
+            box-shadow: 0 6px 20px rgba(88, 101, 242, 0.4);
+            transform: scale(1.02);
         }
 
         .btn-discord:active {
@@ -69,9 +93,11 @@
         }
 
         .footer-text {
-            margin-top: 25px;
-            color: #888;
-            font-size: 13px;
+            margin-top: 30px;
+            color: #ADB5BD;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         /* Ses Efektleri İçin Görünmez Elementler */
@@ -85,12 +111,14 @@
 
     <div class="login-container">
         <div class="logo">PASSO</div>
+        <div class="subtitle">Roblox Premium Geçiş Sistemi</div>
         
         <button class="btn-discord" id="login-btn" onclick="handleLogin()">
+            <img src="https://assets-global.website-files.com/6257adef93867e35d8a9541d/636e0a22494420510D50EEB5_icon_clyde_white_RGB.svg" alt="Discord">
             <span>Discord ile Giriş Yap</span>
         </button>
 
-        <p class="footer-text">Başka yöntemler daha sonra eklenecektir.</p>
+        <p class="footer-text">Güvenli Giriş • ROPasso v1.0</p>
     </div>
 
     <script>
@@ -101,40 +129,39 @@
         // Hover Sesi
         loginBtn.addEventListener('mouseenter', () => {
             hoverSound.currentTime = 0;
-            hoverSound.play().catch(() => {}); // Kullanıcı etkileşimi yoksa hata vermemesi için
+            hoverSound.play().catch(() => {});
         });
 
         // Click Sesi ve Giriş
         function handleLogin() {
             clickSound.play();
             
-            // Discord OAuth2 Bilgileri
             const clientID = '1497727912978153482'; 
-            const redirect = encodeURIComponent('https://ropasso.vercel.app');
+            const redirect = encodeURIComponent('https://ropasso.vercel.app/');
             const scope = 'identify guilds';
             
+            // DİKKAT: response_type=token olarak ayarlandı
+            const authUrl = `https://discord.com/oauth2/authorize?client_id=${clientID}&redirect_uri=${redirect}&response_type=token&scope=${scope}`;
+            
             setTimeout(() => {
-                window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientID}&redirect_uri=${redirect}&response_type=token&scope=${scope}`;
-            }, 200);
+                window.location.href = authUrl;
+            }, 250);
         }
 
-        // F5 Çekince Otomatik Giriş Kontrolü (LocalStorage)
         window.onload = () => {
             const fragment = new URLSearchParams(window.location.hash.slice(1));
             let accessToken = fragment.get('access_token');
 
-            // Eğer URL'de token varsa, kaydet
             if (accessToken) {
                 localStorage.setItem('ropasso_token', accessToken);
-                window.location.hash = ""; // URL'deki çirkin tokenı temizle
+                window.location.hash = "";
+                alert("Giriş başarılı! Yönlendiriliyorsunuz...");
             }
 
-            // Hafızada token var mı kontrol et
             const savedToken = localStorage.getItem('ropasso_token');
             if (savedToken) {
-                // Token varsa direkt ana sayfaya (dashboard) yönlendir veya profili yükle
-                console.log("Zaten giriş yapılmış, token aktif.");
-                // Buraya ileride: window.location.href = "/dashboard.html"; ekleyebiliriz
+                console.log("Token aktif, dashboard hazırlanıyor.");
+                // İleride buraya profil çekme gelecek
             }
         };
     </script>
