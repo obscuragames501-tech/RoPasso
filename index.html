@@ -1,1 +1,60 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROPasso | Premium Passolig</title>
+    <style>
+        body { background-color: #1F1F1F; color: white; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .container { background: #2A2A2A; padding: 40px; border-radius: 20px; border: 2px solid #FFB300; text-align: center; box-shadow: 0 10px 50px rgba(0,0,0,0.5); width: 90%; max-width: 450px; }
+        h1 { color: #FFB300; margin-bottom: 10px; letter-spacing: 2px; }
+        .btn-discord { background: #5865F2; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; width: 100%; }
+        .btn-discord:hover { background: #4752C4; transform: scale(1.02); }
+        .profile { display: none; margin-top: 20px; }
+        #avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #FFB300; }
+    </style>
+</head>
+<body>
+    <div class="container" id="login-card">
+        <h1>ROPasso</h1>
+        <p>Giriş yaparak biletini kontrol et.</p>
+        <button class="btn-discord" onclick="login()">Discord ile Bağlan</button>
+    </div>
 
+    <div class="container profile" id="profile-card">
+        <img id="avatar" src="" alt="Avatar">
+        <h2 id="username">Hoş geldin!</h2>
+        <div id="ticket-info" style="margin-top: 20px; padding: 15px; background: #1F1F1F; border-radius: 10px; border-left: 5px solid #FFB300;">
+            <p id="match-name">Aktif Bilet Bulunmadı</p>
+            <p id="seat-info" style="font-size: 12px; color: #aaa;"></p>
+        </div>
+    </div>
+
+    <script>
+        function login() {
+            const clientID = 'SENIN_CLIENT_ID_BURAYA'; 
+            const redirect = encodeURIComponent('https://ropasso.vercel.app');
+            window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientID}&redirect_uri=${redirect}&response_type=token&scope=identify`;
+        }
+
+        window.onload = () => {
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const accessToken = fragment.get('access_token');
+
+            if (accessToken) {
+                document.getElementById('login-card').style.display = 'none';
+                document.getElementById('profile-card').style.display = 'block';
+
+                fetch('https://discord.com/api/users/@me', {
+                    headers: { authorization: `Bearer ${accessToken}` }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('username').innerText = data.username;
+                    document.getElementById('avatar').src = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`;
+                });
+            }
+        };
+    </script>
+</body>
+</html>
