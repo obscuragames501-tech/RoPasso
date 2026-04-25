@@ -1,131 +1,208 @@
 const { 
     Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder, 
     ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, 
-    TextInputBuilder, TextInputStyle, PermissionFlagsBits 
+    TextInputBuilder, TextInputStyle, PermissionFlagsBits, ActivityType,
+    ChannelType
 } = require('discord.js');
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+    intents: [
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.GuildMessages, 
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
+    ]
 });
 
-// SUNUCU ID'NI BURAYA YAZ (Komutların anında gelmesi için şart)
-const MY_GUILD_ID = "SUNUCU_ID_BURAYA"; 
+// --- AYARLAR ---
+const TOKEN = process.env.DISCORD_TOKEN; // Vercel/Railway Token Kısmı
+const PASSO_RED = "#E30613";
+const DISCORD_LOGO = "https://assets-global.website-files.com/6257adef93867e35d8a9541d/636e0a22494420510D50EEB5_icon_clyde_white_RGB.svg";
 
+// --- KOMUT TANIMLAMALARI ---
+const commands = [
+    new SlashCommandBuilder()
+        .setName('setup')
+        .setDescription('RoPasso Kontrol Panelini bu kanala gönderir.')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    new SlashCommandBuilder()
+        .setName('setmatch')
+        .setDescription('Yeni bir maç etkinliği planlar.'),
+    new SlashCommandBuilder()
+        .setName('setconcert')
+        .setDescription('Yeni bir konser etkinliği planlar.'),
+    new SlashCommandBuilder()
+        .setName('adminduzenle')
+        .setDescription('Etkinlik yönetici rollerini ayarlar.'),
+    new SlashCommandBuilder()
+        .setName('passoyardim')
+        .setDescription('Tüm komutların listesini ve kullanımını gösterir.')
+];
+
+// --- BOT HAZIR OLDUĞUNDA ---
 client.once('ready', async () => {
-    console.log(`✅ ROPasso Sistemi Aktif: ${client.user.tag}`);
-    
-    // KOMUTLAR
-    const commands = [
-        new SlashCommandBuilder()
-            .setName('setup')
-            .setDescription('RoPasso sistemini sunucu için aktif eder.')
-            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-        
-        new SlashCommandBuilder()
-            .setName('setmatch')
-            .setDescription('Yeni bir maç etkinliği oluşturur.'),
+    console.log(`✅ ROPasso Hazır: ${client.user.tag}`);
+    client.user.setActivity('Roblox Stadyumlarını', { type: ActivityType.Watching });
 
-        new SlashCommandBuilder()
-            .setName('setconcert')
-            .setDescription('Yeni bir konser etkinliği oluşturur.'),
-
-        new SlashCommandBuilder()
-            .setName('adminduzenle')
-            .setDescription('Yetkili rollerini günceller.')
-            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-            
-        new SlashCommandBuilder()
-            .setName('passomaclari')
-            .setDescription('Mevcut biletlerini ve aktif maçları gösterir.')
-    ];
-
+    // Global kayıt (Tüm sunucularda geçerli)
     try {
-        // Global beklemek yerine direkt sunucuya yüklüyoruz (Anında gelir)
-        const guild = await client.guilds.fetch(MY_GUILD_ID);
-        await guild.commands.set(commands);
-        console.log("🔥 Komutlar sunucuya anında tanımlandı! Discord'u kapat-aç yapmana gerek yok.");
+        await client.application.commands.set(commands);
+        console.log("🔥 Global komutlar başarıyla tanımlandı.");
     } catch (err) {
-        console.error("❌ Komutlar yüklenirken hata çıktı (Muhtemelen ID yanlış):", err);
+        console.error("❌ Komut yükleme hatası:", err);
     }
 });
 
+// --- SUNUCUYA KATILMA OLAYI (OTOMATİK PANEL) ---
+client.on('guildCreate', async (guild) => {
+    console.log(`🏠 Yeni Sunucu: ${guild.name}`);
+
+    // Mesaj atabileceği en mantıklı kanalı bul (Genelde sistem kanalı veya ilk yazı kanalı)
+    const channel = guild.channels.cache.find(
+        ch => ch.type === ChannelType.GuildText && 
+        ch.permissionsFor(guild.members.me).has(PermissionFlagsBits.SendMessages)
+    );
+
+    if (!channel) return;
+
+    const welcomeEmbed = new EmbedBuilder()
+        .setTitle('🏟️ RoPasso Sunucunuza Hoş Geldiniz!')
+        .setThumbnail(DISCORD_LOGO)
+        .setDescription('Roblox dünyasının en gelişmiş biletleme ve geçiş sistemi artık aktif.\n\n**Şu an ne yapmalısın?**\nBütün sistemi aşağıdaki butona basarak veya `/setup` yazarak bu kanala kurabilirsin.')
+        .addFields(
+            { name: '📍 Otomatik Kurulum', value: 'Butona bastığında yönetim paneli buraya sabitlenir.', inline: true },
+            { name: '🔐 Yetki', value: 'Sadece Yöneticiler bu paneli görebilir.', inline: true }
+        )
+        .setColor(PASSO_RED)
+        .setFooter({ text: 'RoPasso v1.0 | Premium Biletleme Altyapısı' });
+
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('auto_setup')
+            .setLabel('Yönetim Panelini Kur')
+            .setStyle(ButtonStyle.Danger)
+            .setEmoji('🛠️')
+    );
+
+    channel.send({ embeds: [welcomeEmbed], components: [row] });
+});
+
+// --- ETKİLEŞİM YÖNETİMİ ---
 client.on('interactionCreate', async interaction => {
-    // Yönetici Yetki Kontrolü
-    if (interaction.guild && !interaction.guild.members.me.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ content: "❌ **Hata:** Botun 'Yönetici' yetkisi yok. Lütfen yetki verin.", ephemeral: true });
-    }
-
-    // --- SETUP KOMUTU ---
-    if (interaction.commandName === 'setup') {
-        const setupEmbed = new EmbedBuilder()
-            .setTitle('🎫 RoPasso Kurulum Paneli')
-            .setDescription('Sunucunuz için RoPasso artık aktif!\n\n**Admin Rolleri:** Maçları düzenleyecek rolleri ayarlayın.\nArtık `/adminduzenle` ile rolleri yönetebilirsiniz.')
-            .setColor('#E30613')
-            .setFooter({ text: 'Premium Passolig Deneyimi' });
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('setup_roles').setLabel('Yetkili Rolleri Ayarla').setStyle(ButtonStyle.Primary)
-        );
-        await interaction.reply({ embeds: [setupEmbed], components: [row] });
-    }
-
-    // --- SETMATCH / SETCONCERT ---
-    if (interaction.commandName === 'setmatch' || interaction.commandName === 'setconcert') {
-        const isMatch = interaction.commandName === 'setmatch';
-        const modal = new ModalBuilder()
-            .setCustomId(isMatch ? 'match_modal' : 'concert_modal')
-            .setTitle(isMatch ? 'Yeni Maç Oluştur' : 'Yeni Konser Oluştur');
-
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('event_title').setLabel(isMatch ? "Maç Adı (FB-GS vb.)" : "Sanatçı/Etkinlik Adı").setStyle(TextInputStyle.Short).setRequired(true)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('roblox_link').setLabel("Roblox Mekan Linki").setStyle(TextInputStyle.Short).setPlaceholder("https://roblox.com/...").setRequired(true)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('event_date').setLabel("Tarih ve Saat").setStyle(TextInputStyle.Short).setPlaceholder("GG/AA/YYYY 20:00").setRequired(true))
-        );
-        await interaction.showModal(modal);
-    }
-
-    // --- BUTON ETKİLEŞİMLERİ ---
-    if (interaction.isButton()) {
-        if (interaction.customId === 'add_tribune') {
-            const tModal = new ModalBuilder().setCustomId('tribune_form').setTitle('Tribün/Alan Ekle');
-            tModal.addComponents(
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('t_name').setLabel("Tribün İsmi").setStyle(TextInputStyle.Short).setRequired(true)),
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('t_part').setLabel("Roblox Part İsmi (Workspace)").setStyle(TextInputStyle.Short).setRequired(true))
-            );
-            await interaction.showModal(tModal);
+    
+    // 1. SLASH KOMUTLARI
+    if (interaction.isChatInput()) {
+        if (interaction.commandName === 'setup') {
+            await sendControlPanel(interaction);
         }
         
-        if (interaction.customId === 'setup_roles') {
-            await interaction.reply({ content: "🛠️ Yetkili rolleri düzenleme menüsü ileride buraya eklenecek. Şu an `/adminduzenle` kullanabilirsiniz.", ephemeral: true });
+        if (interaction.commandName === 'setmatch' || interaction.commandName === 'setconcert') {
+            await openEventModal(interaction, interaction.commandName === 'setmatch');
+        }
+
+        if (interaction.commandName === 'passoyardim') {
+            const helpEmbed = new EmbedBuilder()
+                .setTitle('📖 ROPasso Komut Rehberi')
+                .setColor(PASSO_RED)
+                .addFields(
+                    { name: '`/setup`', value: 'Yönetim panelini kanala gönderir.' },
+                    { name: '`/setmatch`', value: 'Maç oluşturma formunu açar.' },
+                    { name: '`/setconcert`', value: 'Konser oluşturma formunu açar.' },
+                    { name: '`/adminduzenle`', value: 'Yetkili rollerini belirler.' }
+                );
+            await interaction.reply({ embeds: [helpEmbed], ephemeral: true });
         }
     }
 
-    // --- MODAL SUBMIT ---
-    if (interaction.isModalSubmit()) {
-        if (interaction.customId === 'match_modal' || interaction.customId === 'concert_modal') {
-            const title = interaction.fields.getTextInputValue('event_title');
-            const date = interaction.fields.getTextInputValue('event_date');
-            const link = interaction.fields.getTextInputValue('roblox_link');
+    // 2. BUTONLAR
+    if (interaction.isButton()) {
+        if (interaction.customId === 'auto_setup' || interaction.customId === 'refresh_panel') {
+            await sendControlPanel(interaction);
+        }
 
-            const embed = new EmbedBuilder()
-                .setTitle(`✅ Etkinlik Hazırlanıyor: ${title}`)
-                .setDescription("Lütfen en az bir **Tribün/Koltuk Alanı** ekleyin. Eklenmezse bilet satışı yapılamaz.")
-                .addFields({ name: '📅 Tarih', value: date, inline: true }, { name: '🏟️ Link', value: link, inline: true })
-                .setColor('#E30613');
+        if (interaction.customId === 'btn_match') await openEventModal(interaction, true);
+        if (interaction.customId === 'btn_concert') await openEventModal(interaction, false);
+        
+        if (interaction.customId === 'add_tribune') {
+            const modal = new ModalBuilder().setCustomId('modal_tribune').setTitle('Tribün Detayları');
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('t_name').setLabel("Tribün Adı").setStyle(TextInputStyle.Short).setRequired(true)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('t_part').setLabel("Roblox Part İsmi").setStyle(TextInputStyle.Short).setPlaceholder("Workspace üzerindeki isim").setRequired(true))
+            );
+            await interaction.showModal(modal);
+        }
+    }
+
+    // 3. MODAL SUBMIT
+    if (interaction.isModalSubmit()) {
+        if (interaction.customId === 'modal_match' || interaction.customId === 'modal_concert') {
+            const isMatch = interaction.customId === 'modal_match';
+            const title = interaction.fields.getTextInputValue('title');
+            const date = interaction.fields.getTextInputValue('date');
+            
+            const eventEmbed = new EmbedBuilder()
+                .setTitle(isMatch ? `⚽ Maç Kuruluyor: ${title}` : `🎤 Konser Kuruluyor: ${title}`)
+                .setColor(isMatch ? '#007BFF' : '#FFC107')
+                .setDescription(`Etkinlik detayları aşağıdadır. Lütfen tribünleri eklemeyi unutmayın.`)
+                .addFields(
+                    { name: '📅 Tarih', value: date, inline: true },
+                    { name: '🏟️ Durum', value: 'Tribün Bekleniyor', inline: true }
+                );
 
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('add_tribune').setLabel('➕ Tribün/Alan Ekle').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('finalize_event').setLabel('🚀 Yayına Al').setStyle(ButtonStyle.Primary)
+                new ButtonBuilder().setCustomId('add_tribune').setLabel('➕ Tribün Ekle').setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId('finalize').setLabel('🚀 Yayına Al').setStyle(ButtonStyle.Primary)
             );
-            await interaction.reply({ embeds: [embed], components: [row] });
+
+            await interaction.reply({ embeds: [eventEmbed], components: [row] });
         }
 
-        if (interaction.customId === 'tribune_form') {
-            const name = interaction.fields.getTextInputValue('t_name');
-            const part = interaction.fields.getTextInputValue('t_part');
-            await interaction.reply({ content: `✅ **${name}** tribünü başarıyla listeye eklendi! (Part: \`${part}\`)`, ephemeral: true });
+        if (interaction.customId === 'modal_tribune') {
+            const tName = interaction.fields.getTextInputValue('t_name');
+            await interaction.reply({ content: `✅ **${tName}** tribünü sisteme kaydedildi. Diğer tribünleri eklemeye devam edebilirsiniz.`, ephemeral: true });
         }
     }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+// --- FONKSİYONLAR ---
+
+async function sendControlPanel(interaction) {
+    const panelEmbed = new EmbedBuilder()
+        .setTitle('🕹️ ROPasso Yönetim Paneli')
+        .setDescription('Sunucundaki maç ve konser süreçlerini buradan yönetebilirsin.\n\n**Hızlı İşlemler:**')
+        .addFields(
+            { name: '⚽ Maçlar', value: 'Yeni maç ve stadyum ayarları.', inline: true },
+            { name: '🎤 Konserler', value: 'Sanatçı ve alan ayarları.', inline: true },
+            { name: '🎫 Biletler', value: 'Satış durumu ve raporlar.', inline: true }
+        )
+        .setColor(PASSO_RED)
+        .setImage('https://i.imgur.com/your-premium-banner.png'); // Buraya bir banner koyabilirsin
+
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('btn_match').setLabel('Maç Kur').setStyle(ButtonStyle.Secondary).setEmoji('⚽'),
+        new ButtonBuilder().setCustomId('btn_concert').setLabel('Konser Kur').setStyle(ButtonStyle.Secondary).setEmoji('🎤'),
+        new ButtonBuilder().setCustomId('refresh_panel').setLabel('Paneli Yenile').setStyle(ButtonStyle.Primary).setEmoji('🔄')
+    );
+
+    if (interaction.isButton() && interaction.customId === 'auto_setup') {
+        await interaction.update({ embeds: [panelEmbed], components: [row] });
+    } else {
+        await interaction.reply({ embeds: [panelEmbed], components: [row] });
+    }
+}
+
+async function openEventModal(interaction, isMatch) {
+    const modal = new ModalBuilder()
+        .setCustomId(isMatch ? 'modal_match' : 'modal_concert')
+        .setTitle(isMatch ? 'Maç Oluşturma Formu' : 'Konser Oluşturma Formu');
+
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('title').setLabel(isMatch ? "Maç Adı" : "Etkinlik Adı").setStyle(TextInputStyle.Short).setRequired(true)),
+        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('date').setLabel("Tarih (GG/AA/YYYY Saat)").setStyle(TextInputStyle.Short).setPlaceholder("Örn: 26/04/2026 20:30").setRequired(true)),
+        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('link').setLabel("Roblox Oyun Linki").setStyle(TextInputStyle.Short).setRequired(true))
+    );
+
+    await interaction.showModal(modal);
+}
+
+client.login(TOKEN);
