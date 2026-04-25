@@ -32,7 +32,7 @@
 
     <script>
         function login() {
-            const clientID = 'SENIN_CLIENT_ID_BURAYA'; 
+            const clientID = 'https://discord.com/oauth2/authorize?client_id=1497727912978153482&permissions=8&integration_type=0&scope=bot+applications.commands'; 
             const redirect = encodeURIComponent('https://ropasso.vercel.app');
             window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientID}&redirect_uri=${redirect}&response_type=token&scope=identify`;
         }
