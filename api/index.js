@@ -4,7 +4,7 @@ const session = require('express-session');
 const app = express();
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'ropasso-gizli-key',
+    secret: 'ropasso-gizli-key-2026',
     resave: false,
     saveUninitialized: false
 }));
@@ -24,113 +24,121 @@ const ui = (body) => `
     <style>
         * { box-sizing: border-box; }
         body { 
-            background-color: #f0f2f5; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f8f9fa; 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
             margin: 0; 
             display: flex; 
-            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
             min-height: 100vh;
         }
-        .header { 
-            background-color: #e30613; 
+        .main-card { 
+            background: white; 
+            border-radius: 30px; 
+            box-shadow: 0 25px 80px rgba(0,0,0,0.12); 
             width: 100%; 
-            padding: 12px 0; 
-            display: flex; 
-            justify-content: center; 
-            box-shadow: 0 4px 12px rgba(227, 6, 19, 0.2);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            max-width: 440px; 
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(0,0,0,0.05);
         }
-        .header img { height: 60px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-        .main-content {
-            flex: 1;
+        .accent-bar {
+            height: 12px;
+            background: #e30613;
+            width: 100%;
+        }
+        .card-content { padding: 40px 30px; text-align: center; }
+        .logo-container {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 50%;
+            margin: -60px auto 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 5px solid white;
         }
-        .card { 
-            background: white; 
-            padding: 40px 30px; 
-            border-radius: 24px; 
-            box-shadow: 0 20px 60px rgba(0,0,0,0.08); 
-            text-align: center; 
-            width: 100%; 
-            max-width: 420px; 
-            border-top: 10px solid #e30613;
-            animation: fadeIn 0.5s ease-out;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        h2 { color: #1a1a1a; margin-bottom: 15px; font-size: 28px; letter-spacing: -0.5px; }
-        p { color: #5f6368; line-height: 1.6; font-size: 15px; margin-bottom: 30px; }
-        .btn-discord { 
+        .logo-container img { width: 100px; height: auto; }
+        h2 { color: #1a1a1a; margin-top: 10px; font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+        p { color: #6c757d; line-height: 1.6; font-size: 16px; margin: 15px 0 35px; }
+        .btn-action { 
             background-color: #5865F2; 
             color: white; 
-            padding: 16px 24px; 
+            padding: 18px; 
             text-decoration: none; 
-            border-radius: 12px; 
+            border-radius: 16px; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             font-weight: 700; 
-            font-size: 16px;
-            transition: all 0.2s ease; 
+            font-size: 18px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
             border: none; 
             cursor: pointer;
             width: 100%;
+            box-shadow: 0 8px 25px rgba(88,101,242,0.3);
         }
-        .btn-discord img { height: 24px; margin-right: 12px; }
-        .btn-discord:hover { background-color: #4752c4; transform: scale(1.02); box-shadow: 0 8px 20px rgba(88,101,242,0.3); }
-        .user-box {
+        .btn-action:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(88,101,242,0.4); }
+        .btn-action img { height: 26px; margin-right: 14px; }
+        .user-pill {
             display: flex;
             align-items: center;
-            background: #fff5f5;
-            padding: 15px;
-            border-radius: 16px;
-            margin-bottom: 25px;
-            border: 1px solid #ffebeb;
+            background: #fef2f2;
+            padding: 18px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #fee2e2;
+            text-align: left;
         }
-        .user-box img { width: 50px; height: 50px; border-radius: 50%; border: 3px solid #e30613; margin-right: 15px; }
-        .footer { padding: 20px; color: #9aa0a6; font-size: 12px; text-align: center; font-weight: 600; }
+        .user-pill img { width: 55px; height: 55px; border-radius: 50%; border: 3px solid #e30613; margin-right: 18px; }
+        .footer-note { margin-top: 35px; color: #adb5bd; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
         select {
             width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: 2px solid #eee;
-            margin-bottom: 20px;
+            padding: 16px;
+            border-radius: 14px;
+            border: 2px solid #edeff2;
+            margin-bottom: 25px;
             font-size: 16px;
-            background: #fafafa;
+            background: #fbfbfb;
+            color: #495057;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
-    <div class="header"><img src="${LOGO_URL}"></div>
-    <div class="main-content">
-        <div class="card">${body}</div>
+    <div class="main-card">
+        <div class="accent-bar"></div>
+        <div class="card-content">
+            <div class="logo-container">
+                <img src="${LOGO_URL}" alt="RoPasso Logo">
+            </div>
+            ${body}
+            <div class="footer-note">ROPASSO DIGITAL TICKETING 2026</div>
+        </div>
     </div>
-    <div class="footer">ROPASSO DIGITAL TICKETING SYSTEM 2026</div>
 </body>
 </html>`;
 
 app.get('/', (req, res) => {
     res.send(ui(`
         <h2>Hoş Geldiniz</h2>
-        <p>Maçlara ve sunucu etkinliklerine giriş yapmak için hesabınızı bağlayın.</p>
-        <a href="/login" class="btn-discord">
-            <img src="${DISCORD_ICON}"> Discord ile Giriş Yap
+        <p>Tribünlerde yerini almak için dijital bilet profilini bağla ve maçlara katıl.</p>
+        <a href="/login" class="btn-action">
+            <img src="${DISCORD_ICON}"> Discord ile Bağlan
         </a>
     `));
 });
 
 app.get('/login', (req, res) => {
-    // BURADAKİ DEĞİŞKENLERİN VERCEL'DE OLDUĞUNDAN EMİN OL
+    // SENİN ATTIĞIN URL'DEKİ SCOPE VE YETKİLERİ BURAYA GÖMDÜM
     const clientID = process.env.DISCORD_CLIENT_ID;
     const redirectURI = process.env.DISCORD_REDIRECT_URI;
     
     if(!clientID || !redirectURI) return res.send("Hata: Vercel Environment Variables eksik!");
 
-    const url = `https://discord.com/api/oauth2/authorize?client_id=${clientID}&redirect_uri=${encodeURIComponent(redirectURI)}&response_type=code&scope=identify%20guilds`;
+    const url = `https://discord.com/api/oauth2/authorize?client_id=${clientID}&permissions=8&response_type=code&redirect_uri=${encodeURIComponent(redirectURI)}&integration_type=0&scope=identify+guilds.members.read+guilds+bot+applications.commands`;
     res.redirect(url);
 });
 
@@ -139,7 +147,7 @@ app.get('/api/auth/callback', async (req, res) => {
     try {
         const response = await axios.post('https://discord.com/api/oauth2/token', new URLSearchParams({
             client_id: process.env.DISCORD_CLIENT_ID,
-            client_secret: process.env.DISCORD_TOKEN, // SENİN DEĞİŞKENİN
+            client_secret: process.env.DISCORD_TOKEN,
             grant_type: 'authorization_code',
             code: code,
             redirect_uri: process.env.DISCORD_REDIRECT_URI,
@@ -152,8 +160,7 @@ app.get('/api/auth/callback', async (req, res) => {
         req.session.user = user.data;
         res.redirect('/dashboard');
     } catch (err) { 
-        console.error(err.response ? err.response.data : err.message);
-        res.send("Hata: " + (err.response ? JSON.stringify(err.response.data) : "Giriş yapılamadı.")); 
+        res.send("Hata: " + (err.response ? JSON.stringify(err.response.data) : "Giriş başarısız.")); 
     }
 });
 
@@ -162,16 +169,16 @@ app.get('/dashboard', (req, res) => {
     const avatar = req.session.user.avatar ? `https://cdn.discordapp.com/avatars/${req.session.user.id}/${req.session.user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
     
     res.send(ui(`
-        <div class="user-box">
+        <div class="user-pill">
             <img src="${avatar}">
-            <div style="text-align:left">
-                <div style="font-size:12px; color:#e30613; font-weight:700">TARAFTAR PROFILI</div>
-                <div style="font-size:18px; font-weight:800">${req.session.user.username}</div>
+            <div>
+                <div style="font-size:11px; color:#e30613; font-weight:800; letter-spacing:1px">DİJİTAL TARAFTAR</div>
+                <div style="font-size:20px; font-weight:900; color:#1a1a1a">${req.session.user.username}</div>
             </div>
         </div>
-        <p>Biletini kullanmak istediğin sunucuyu seç.</p>
-        <select><option>Aktif Sunucular...</option></select>
-        <button class="btn-discord" style="background:#e30613">ETKINLIKLERI LISTELE</button>
+        <p>Bilet tanımlamak istediğiniz stadyum veya sunucuyu seçin.</p>
+        <select><option>Sunucu Seçiniz...</option></select>
+        <button class="btn-action" style="background:#e30613; box-shadow: 0 8px 25px rgba(227,6,19,0.3);">MAÇLARI LİSTELE</button>
     `));
 });
 
