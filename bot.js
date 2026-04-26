@@ -1,10 +1,10 @@
-// Vercel üzerindeki Environment Variables'dan (Key) bilgileri çeker
 const { 
     Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder, 
     ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, 
     TextInputBuilder, TextInputStyle, PermissionFlagsBits, ActivityType,
-    ChannelType
+    ChannelType, Routes
 } = require('discord.js');
+const { REST } = require('@discordjs/rest');
 
 const client = new Client({
     intents: [
@@ -16,11 +16,9 @@ const client = new Client({
 });
 
 // --- AYARLAR ---
-// Vercel panelinde "DISCORD_TOKEN" ismiyle açtığın keyi buradan okur
 const TOKEN = process.env.DISCORD_TOKEN; 
 const PASSO_RED = "#E30613";
 
-// --- KOMUT TANIMLAMALARI ---
 const commands = [
     new SlashCommandBuilder()
         .setName('setup')
@@ -38,23 +36,37 @@ const commands = [
     new SlashCommandBuilder()
         .setName('passoyardim')
         .setDescription('Tüm komutların listesini ve kullanımını gösterir.')
-];
+].map(command => command.toJSON());
 
-// --- BOT HAZIR OLDUĞUNDA ---
+// --- KOMUTLARI KAYDETME FONKSİYONU ---
+async function refreshCommands() {
+    const rest = new REST({ version: '10' }).setToken(TOKEN);
+    try {
+        console.log('🔄 Slash komutları yenileniyor...');
+        await rest.put(
+            Routes.applicationCommands(client.user.id),
+            { body: commands },
+        );
+        console.log('✅ Slash komutları başarıyla küresel olarak kaydedildi!');
+    } catch (error) {
+        console.error('❌ Komut kaydetme hatası:', error);
+    }
+}
+
+// --- BOT HAZIR ---
 client.once('ready', async () => {
     console.log(`✅ ROPasso Hazır: ${client.user.tag}`);
     client.user.setActivity('Roblox Stadyumlarını', { type: ActivityType.Watching });
-
-    try {
-        await client.application.commands.set(commands);
-        console.log("🔥 Global slash komutları başarıyla tanımlandı.");
-    } catch (err) {
-        console.error("❌ Komut yükleme hatası:", err);
-    }
+    
+    // Bot açıldığında komutları Discord'a zorla kaydettiriyoruz
+    await refreshCommands();
 });
 
-// --- SUNUCUYA KATILMA OLAYI ---
+// --- SUNUCUYA KATILINCA MESAJ ---
 client.on('guildCreate', async (guild) => {
+    console.log(`🏠 Yeni Sunucu: ${guild.name}`);
+    
+    // Botun mesaj yazabileceği en yetkili kanalı bul
     const channel = guild.channels.cache.find(
         ch => ch.type === ChannelType.GuildText && 
         ch.permissionsFor(guild.members.me).has(PermissionFlagsBits.SendMessages)
@@ -62,136 +74,84 @@ client.on('guildCreate', async (guild) => {
 
     if (!channel) return;
 
-    const welcomeEmbed = new EmbedBuilder()
-        .setTitle('🏟️ RoPasso Sunucunuza Hoş Geldiniz!')
-        .setDescription('Premium biletleme altyapısı hazır. Başlamak için paneli kurun.')
+    const welcome = new EmbedBuilder()
+        .setTitle('🏟️ RoPasso | Sisteme Hoş Geldiniz!')
+        .setDescription('Roblox biletleme ve stadyum yönetim sistemi başarıyla sunucunuza eklendi.\n\n**Komutlar gözükmüyorsa Discord uygulamanızı kapatıp açın (Ctrl+R).**')
+        .addFields({ name: '🚀 Başlangıç', value: '`/setup` yazarak paneli kurabilirsin.' })
         .setColor(PASSO_RED)
-        .setThumbnail(client.user.displayAvatarURL())
-        .setFooter({ text: 'RoPasso | Premium System' });
+        .setThumbnail(client.user.displayAvatarURL());
 
     const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId('auto_setup')
-            .setLabel('Yönetim Panelini Kur')
-            .setStyle(ButtonStyle.Danger)
-            .setEmoji('🛠️')
+        new ButtonBuilder().setCustomId('auto_setup').setLabel('Paneli Kur').setStyle(ButtonStyle.Danger).setEmoji('🛠️')
     );
 
-    channel.send({ embeds: [welcomeEmbed], components: [row] });
+    channel.send({ embeds: [welcome], components: [row] }).catch(e => console.log("Mesaj atılamadı:", e));
 });
 
-// --- ETKİLEŞİM YÖNETİMİ ---
+// --- ETKİLEŞİMLER ---
 client.on('interactionCreate', async interaction => {
     
-    // 1. SLASH KOMUTLARI
+    // Slash Komut İşleme
     if (interaction.isChatInput()) {
         if (interaction.commandName === 'setup') await sendControlPanel(interaction);
-        
         if (interaction.commandName === 'setmatch' || interaction.commandName === 'setconcert') {
             await openEventModal(interaction, interaction.commandName === 'setmatch');
         }
-
         if (interaction.commandName === 'passoyardim') {
-            const helpEmbed = new EmbedBuilder()
-                .setTitle('📖 ROPasso Komut Rehberi')
-                .setColor(PASSO_RED)
+            const help = new EmbedBuilder()
+                .setTitle('📖 Komut Listesi')
                 .addFields(
-                    { name: '`/setup`', value: 'Yönetim panelini kanala gönderir.' },
-                    { name: '`/setmatch`', value: 'Maç oluşturma formunu açar.' },
-                    { name: '`/setconcert`', value: 'Konser oluşturma formunu açar.' }
-                );
-            await interaction.reply({ embeds: [helpEmbed], ephemeral: true });
+                    { name: '/setup', value: 'Paneli kurar.' },
+                    { name: '/setmatch', value: 'Maç açar.' }
+                ).setColor(PASSO_RED);
+            await interaction.reply({ embeds: [help], ephemeral: true });
         }
     }
 
-    // 2. BUTONLAR
+    // Buton İşleme
     if (interaction.isButton()) {
         if (interaction.customId === 'auto_setup' || interaction.customId === 'refresh_panel') {
             await sendControlPanel(interaction);
         }
-
         if (interaction.customId === 'btn_match') await openEventModal(interaction, true);
         if (interaction.customId === 'btn_concert') await openEventModal(interaction, false);
-        
-        if (interaction.customId === 'add_tribune') {
-            const modal = new ModalBuilder().setCustomId('modal_tribune').setTitle('Tribün Detayları');
-            modal.addComponents(
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('t_name').setLabel("Tribün Adı").setStyle(TextInputStyle.Short).setRequired(true)),
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('t_part').setLabel("Roblox Part İsmi").setStyle(TextInputStyle.Short).setRequired(true))
-            );
-            await interaction.showModal(modal);
-        }
     }
 
-    // 3. MODAL SUBMIT (FORM GÖNDERME)
+    // Modal (Form) İşleme
     if (interaction.isModalSubmit()) {
-        if (interaction.customId === 'modal_match' || interaction.customId === 'modal_concert') {
-            const isMatch = interaction.customId === 'modal_match';
-            const title = interaction.fields.getTextInputValue('title');
-            const date = interaction.fields.getTextInputValue('date');
-            
-            const eventEmbed = new EmbedBuilder()
-                .setTitle(isMatch ? `⚽ Maç Kuruluyor: ${title}` : `🎤 Konser Kuruluyor: ${title}`)
-                .setColor(isMatch ? '#1F1F1F' : '#FFB300')
-                .setDescription(`Etkinlik detayları sisteme işlendi.`)
-                .addFields(
-                    { name: '📅 Tarih', value: date, inline: true },
-                    { name: '🏟️ Durum', value: 'Tribün Bekleniyor', inline: true }
-                );
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('add_tribune').setLabel('➕ Tribün Ekle').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('finalize').setLabel('🚀 Yayına Al').setStyle(ButtonStyle.Primary)
-            );
-
-            await interaction.reply({ embeds: [eventEmbed], components: [row] });
-        }
-
-        if (interaction.customId === 'modal_tribune') {
-            const tName = interaction.fields.getTextInputValue('t_name');
-            await interaction.reply({ content: `✅ **${tName}** tribünü başarıyla kaydedildi.`, ephemeral: true });
-        }
+        const title = interaction.fields.getTextInputValue('title');
+        await interaction.reply({ content: `✅ Etkinlik başarıyla oluşturuldu: **${title}**`, ephemeral: true });
     }
 });
 
-// --- YARDIMCI FONKSİYONLAR ---
 async function sendControlPanel(interaction) {
-    const panelEmbed = new EmbedBuilder()
+    const embed = new EmbedBuilder()
         .setTitle('🕹️ ROPasso Yönetim Paneli')
-        .setDescription('Sunucundaki maç ve konser süreçlerini buradan yönetebilirsin.')
-        .setThumbnail(client.user.displayAvatarURL())
+        .setDescription('Etkinlikleri buradan yönetin.')
         .setColor(PASSO_RED);
 
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('btn_match').setLabel('Maç Kur').setStyle(ButtonStyle.Secondary).setEmoji('⚽'),
-        new ButtonBuilder().setCustomId('btn_concert').setLabel('Konser Kur').setStyle(ButtonStyle.Secondary).setEmoji('🎤'),
-        new ButtonBuilder().setCustomId('refresh_panel').setLabel('Paneli Yenile').setStyle(ButtonStyle.Primary).setEmoji('🔄')
+        new ButtonBuilder().setCustomId('btn_concert').setLabel('Konser Kur').setStyle(ButtonStyle.Secondary).setEmoji('🎤')
     );
 
-    if (interaction.isButton()) {
-        await interaction.update({ embeds: [panelEmbed], components: [row] });
-    } else {
-        await interaction.reply({ embeds: [panelEmbed], components: [row] });
-    }
+    if (interaction.isButton()) await interaction.update({ embeds: [embed], components: [row] });
+    else await interaction.reply({ embeds: [embed], components: [row] });
 }
 
 async function openEventModal(interaction, isMatch) {
     const modal = new ModalBuilder()
         .setCustomId(isMatch ? 'modal_match' : 'modal_concert')
-        .setTitle(isMatch ? 'Maç Oluşturma' : 'Konser Oluşturma');
+        .setTitle(isMatch ? 'Maç Kur' : 'Konser Kur');
 
     modal.addComponents(
-        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('title').setLabel(isMatch ? "Maç Adı" : "Etkinlik Adı").setStyle(TextInputStyle.Short).setRequired(true)),
-        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('date').setLabel("Tarih (GG/AA/YYYY Saat)").setStyle(TextInputStyle.Short).setPlaceholder("26/04/2026 20:30").setRequired(true)),
-        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('link').setLabel("Roblox Oyun Linki").setStyle(TextInputStyle.Short).setRequired(true))
+        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('title').setLabel("Başlık").setStyle(TextInputStyle.Short).setRequired(true)),
+        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('date').setLabel("Tarih").setStyle(TextInputStyle.Short).setRequired(true)),
+        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('link').setLabel("Oyun Linki").setStyle(TextInputStyle.Short).setRequired(true))
     );
 
     await interaction.showModal(modal);
 }
 
-// Botu başlat
-if (TOKEN) {
-    client.login(TOKEN);
-} else {
-    console.error("❌ HATA: Vercel üzerinde DISCORD_TOKEN anahtarı (key) bulunamadı!");
-}
+if (TOKEN) client.login(TOKEN);
+else console.error("❌ TOKEN YOK!");
