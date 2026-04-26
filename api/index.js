@@ -8,17 +8,18 @@ app.use(session({
     secret: 'ropasso-final-ultra-2026',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 saat boyunca login kalır
+    cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
 
-// ASSET VE LOGO TANIMLARI
 const ASSETS = {
     LOGO: "https://cdn.discordapp.com/attachments/1495543284423065662/1497923776929599570/Gemini_Generated_Image_o1s4jao1s4jao1s4-removebg-preview.png",
-    PASSO_WHITE: "https://cdn.passo.com.tr/passotaraftar/public/logo.svg",
+    PASSO_NAV: "https://cdn.passo.com.tr/passotaraftar/public/logo.svg",
     DISCORD: "https://cdn.discordapp.com/attachments/1497741754777079829/1497743438798389268/39-393163_company-discord-logo-png-white-Photoroom.png",
     ROBLOX: "https://cdn.discordapp.com/attachments/1497741754777079829/1497937507419951225/Roblox_Logo_2025.png",
-    NEWS_IMG: "https://cdn.discordapp.com/attachments/1495543284423065662/1497937018355712111/image.png",
-    FOUNDER: "https://cdn.discordapp.com/attachments/1495543284423065662/1497937318336528446/noFilter.png"
+    NEWS_BANNER: "https://cdn.discordapp.com/attachments/1495543284423065662/1497937018355712111/image.png",
+    FOUNDER: "https://cdn.discordapp.com/attachments/1495543284423065662/1497937318336528446/noFilter.png",
+    ID_TUTORIAL: "https://cdn.discordapp.com/attachments/1495543284423065662/1497935107258843247/image.png",
+    URL_TUTORIAL: "https://cdn.discordapp.com/attachments/1495543284423065662/1497935416429383801/image.png"
 };
 
 const CARDS = {
@@ -27,16 +28,14 @@ const CARDS = {
     PATTERN: "https://cdn.discordapp.com/attachments/1495543284423065662/1497934739548668005/Gemini_Generated_Image_r9czspr9czspr9cz-Photoroom_1.png"
 };
 
-// VERCEL AYARLARI
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID || "1497727912978153482";
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || "https://ropasso.vercel.app/api/auth/callback";
 const DISCORD_AUTH_URL = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify+guilds`;
 
-// SAHTE VERİTABANI (PROD İÇİN MONGODB LAZIM AMA TEST İÇİN RAM'DE TUTUYORUZ)
 let db_cards = {};
 
-const ui = (body, user = null) => `
+const ui = (body, user = null, activePage = 'home') => `
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -44,106 +43,179 @@ const ui = (body, user = null) => `
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RoPasso | Dijital Futbol Dünyası</title>
     <style>
-        :root { --primary: #e30613; --bg: #f5f5f7; }
-        * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        body { margin: 0; background-color: var(--bg); color: #1d1d1f; }
+        :root { --primary: #e30613; --bg: #f8f9fa; --sidebar: #ffffff; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; transition: 0.2s; }
+        body { background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* TOPBAR */
-        .topbar { background: #fff; height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
-        .topbar .logo { height: 40px; cursor: pointer; }
-        .topbar .nav-btn { background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 700; text-decoration: none; font-size: 14px; }
-        .topbar .nav-btn:hover { background: #b0050f; transform: translateY(-2px); }
-
-        /* CONTENT AREA */
-        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
-        .hero-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 50px; }
+        .topbar { background: #fff; height: 70px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; flex-shrink: 0; }
+        .main-layout { display: flex; flex: 1; overflow: hidden; }
         
-        /* CARD STYLING */
-        .glass-card { background: #fff; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-        .passo-card-preview { position: relative; width: 100%; aspect-ratio: 1.58/1; border-radius: 15px; overflow: hidden; margin-top: 20px; color: #fff; }
-        .card-bg { width: 100%; height: 100%; object-fit: cover; }
-        .card-user-info { position: absolute; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 15px; }
-        .card-avatar { width: 60px; height: 60px; border-radius: 50%; border: 3px solid #fff; background: #222; }
-        .card-name { font-weight: 800; font-size: 18px; text-transform: uppercase; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid #eee; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .content { flex: 1; overflow-y: auto; padding: 40px; }
 
-        /* FORM */
-        .form-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
-        input, select { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid #eee; background: #fafafa; font-size: 16px; }
-        input:focus { border-color: var(--primary); outline: none; }
+        .nav-item { padding: 15px 20px; border-radius: 12px; text-decoration: none; color: #555; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .nav-item:hover { background: #f0f0f0; }
+        .nav-item.active { background: var(--primary); color: white; }
 
-        /* NEWS SECTION */
-        .news-card { display: flex; gap: 20px; background: #fff; border-radius: 20px; overflow: hidden; margin-top: 20px; text-decoration: none; color: inherit; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .news-card img { width: 300px; height: 180px; object-fit: cover; }
-        .news-content { padding: 20px; flex: 1; }
-        .news-content h3 { margin: 0 0 10px; font-size: 24px; font-weight: 800; }
-        
-        /* FOUNDER SECTION */
-        .founder-box { background: #111; color: #fff; padding: 40px; border-radius: 30px; display: flex; align-items: center; gap: 30px; margin-top: 60px; }
-        .founder-box img { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--primary); }
-        .social-links { display: flex; gap: 15px; margin-top: 15px; }
-        .social-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #222; border-radius: 10px; }
-        .social-btn img { width: 24px; height: 24px; border: none; border-radius: 0; }
+        .card-showcase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0; }
+        .showcase-item { border-radius: 15px; overflow: hidden; border: 2px solid transparent; cursor: pointer; position: relative; }
+        .showcase-item img { width: 100%; display: block; }
+        .showcase-item.selected { border-color: var(--primary); box-shadow: 0 0 15px rgba(227, 6, 19, 0.3); }
 
-        .btn-action { background: var(--primary); color: #fff; padding: 18px; border: none; border-radius: 15px; width: 100%; font-size: 18px; font-weight: 800; cursor: pointer; margin-top: 20px; }
-        .btn-action:disabled { background: #ccc; cursor: not-allowed; }
+        .glass-panel { background: #fff; border-radius: 20px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; font-size: 16px; }
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(227, 6, 19, 0.3); }
+
+        .passo-card-render { position: relative; width: 400px; aspect-ratio: 1.58/1; border-radius: 20px; overflow: hidden; margin: 20px auto; color: white; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .card-info-overlay { position: absolute; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 15px; text-align: left; }
+        .card-pfp { width: 65px; height: 65px; border-radius: 50%; border: 3px solid white; background: #333; }
+
+        .news-banner { width: 100%; height: 350px; border-radius: 25px; background: url('${ASSETS.NEWS_BANNER}') center/cover; position: relative; margin-bottom: 30px; display: flex; align-items: flex-end; padding: 40px; color: white; }
+        .news-banner::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); border-radius: 25px; }
+        .news-text { position: relative; z-index: 1; }
+
+        .tutorial-img { width: 100%; border-radius: 10px; margin: 10px 0; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
     <div class="topbar">
-        <img src="${ASSETS.PASSO_WHITE}" class="logo" onclick="location.href='/dashboard'">
-        <div style="display:flex; align-items:center; gap:20px;">
-            <a href="/dashboard" class="nav-link" style="text-decoration:none; color:#555; font-weight:700;">ANA SAYFA</a>
-            ${user ? `<a href="/logout" class="nav-btn" style="background:#333;">ÇIKIŞ YAP</a>` : `<a href="/login" class="nav-btn">GİRİŞ YAP</a>`}
+        <img src="${ASSETS.PASSO_NAV}" height="35" onclick="location.href='/dashboard'">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <span style="font-weight:700;">${user ? user.username : 'Giriş Yapılmadı'}</span>
+            ${user ? `<a href="/logout" style="color:var(--primary); font-weight:700; text-decoration:none; font-size:14px;">ÇIKIŞ</a>` : ''}
         </div>
     </div>
 
-    <div class="container">
-        ${body}
-        
-        <hr style="border:0; height:1px; background:#ddd; margin: 60px 0;">
-        
-        <h2>Haberler & Duyurular</h2>
-        <a href="#" class="news-card">
-            <img src="${ASSETS.NEWS_IMG}">
-            <div class="news-content">
-                <h3>RoPasso Artık Sizinle!</h3>
-                <p>Türkiye'nin ilk Roblox tabanlı dijital bilet ve taraftar kartı sistemi yayına girdi. Artık Eryaman'da yeriniz hazır!</p>
-                <span style="color:var(--primary); font-weight:700;">Devamını Oku →</span>
+    <div class="main-layout">
+        <div class="sidebar">
+            <a href="/dashboard" class="nav-item ${activePage === 'home' ? 'active' : ''}">ANA SAYFA</a>
+            <a href="/my-cards" class="nav-item ${activePage === 'cards' ? 'active' : ''}">KARTLARIM</a>
+            <a href="/create-card" class="nav-item ${activePage === 'create' ? 'active' : ''}">KART OLUŞTUR</a>
+            <div style="margin-top:auto; padding:20px; background:#f9f9f9; border-radius:15px; text-align:center;">
+                <img src="${ASSETS.FOUNDER}" style="width:60px; height:60px; border-radius:50%; margin-bottom:10px; border: 2px solid var(--primary);">
+                <div style="font-weight:800; font-size:14px;">Xe1lea (Pundk)</div>
+                <div style="font-size:11px; color:#888;">System Developer</div>
             </div>
-        </a>
-
-        <div class="founder-box">
-            <img src="${ASSETS.FOUNDER}">
-            <div>
-                <span style="color:var(--primary); font-weight:800; letter-spacing:1px;">KURUCU MİMAR</span>
-                <h2 style="margin:5px 0;">Xe1lea (Pundk)</h2>
-                <p style="opacity:0.7;">RoPasso altyapısı ve dijital sistemlerin baş geliştiricisi.</p>
-                <div class="social-links">
-                    <a href="https://www.roblox.com/users/727151493/profile" target="_blank" class="social-btn"><img src="${ASSETS.ROBLOX}"></a>
-                    <div class="social-btn" title="Discord: xe1lea"><img src="${ASSETS.DISCORD}"></div>
-                </div>
-            </div>
+        </div>
+        <div class="content">
+            ${body}
         </div>
     </div>
 </body>
 </html>`;
 
+// --- ROUTES ---
+
 app.get('/', (req, res) => {
     if (req.session.user) return res.redirect('/dashboard');
-    res.send(ui(`
-        <div style="text-align:center; padding: 100px 0;">
-            <img src="${ASSETS.LOGO}" style="width:300px; margin-bottom:30px;">
-            <h1 style="font-size:48px; font-weight:900;">Dijital Taraftar Kartın Seni Bekliyor</h1>
-            <p style="font-size:20px; color:#666; margin-bottom:40px;">Hemen Discord ile bağlan ve Roblox kimliğinle biletlerini yönetmeye baş.</p>
-            <a href="${DISCORD_AUTH_URL}" class="btn-action" style="display:inline-block; width:auto; padding: 20px 40px; text-decoration:none; background:#5865F2;">
-                <img src="${ASSETS.DISCORD}" style="height:24px; vertical-align:middle; margin-right:10px;"> Discord ile Giriş Yap
-            </a>
-        </div>
-    `));
+    res.send(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>RoPasso Login</title><style>
+        body { background: #f4f4f4; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; }
+        .login-box { background: white; padding: 50px; border-radius: 30px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 400px; }
+        .btn { background: #5865F2; color: white; padding: 15px 30px; border-radius: 10px; text-decoration: none; font-weight: 800; display: block; margin-top: 20px; }
+    </style></head><body><div class="login-box"><img src="${ASSETS.LOGO}" width="200"><br><h1>Hoş Geldiniz</h1><p>Sistemi kullanmak için giriş yapın.</p><a href="${DISCORD_AUTH_URL}" class="btn">Discord ile Giriş</a></div></body></html>`);
 });
 
-app.get('/login', (req, res) => res.redirect(DISCORD_AUTH_URL));
+app.get('/dashboard', (req, res) => {
+    if (!req.session.user) return res.redirect('/');
+    res.send(ui(`
+        <div class="news-banner">
+            <div class="news-text">
+                <h1 style="font-size:42px; font-weight:900;">RoPasso Yayında!</h1>
+                <p>Türkiye'nin en gelişmiş Roblox taraftar sistemi ile stadyumda yerinizi alın.</p>
+            </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
+            <div class="glass-panel">
+                <h3>Sistem Bilgileri</h3>
+                <p style="margin:15px 0; color:#666; line-height:1.6;">RoPasso, Eryaman Stadyumu ve diğer tüm anlaşmalı sahalarda geçerli olan dijital biletleme sistemidir. Kartınızı oluşturduktan sonra maç biletlerinizi bu panelden yönetebilirsiniz.</p>
+                <ul style="list-style:none; font-weight:600; color:#444;">
+                    <li>✓ Ücretsiz Dijital Kart</li>
+                    <li>✓ Anlık Bilet Kontrolü</li>
+                    <li>✓ Roblox Entegrasyonu</li>
+                </ul>
+            </div>
+            <div class="glass-panel">
+                <h3>Duyurular</h3>
+                <div style="padding:10px; border-left:4px solid var(--primary); background:#fff5f5; margin-bottom:10px;">
+                    <b>Versiyon 2.0 Güncellemesi</b><br><small>Showcase sistemi ve yeni kart tasarımları eklendi!</small>
+                </div>
+            </div>
+        </div>
+    `, req.session.user, 'home'));
+});
+
+app.get('/create-card', (req, res) => {
+    if (!req.session.user) return res.redirect('/');
+    res.send(ui(`
+        <div class="glass-panel" style="max-width:800px; margin:0 auto;">
+            <h2 style="margin-bottom:20px; text-align:center;">Yeni Kart Başvurusu</h2>
+            <form action="/apply-card" method="POST">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                    <div>
+                        <label style="font-weight:700; display:block; margin-bottom:5px;">Roblox İsmi</label>
+                        <input type="text" name="roblox_name" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" required>
+                        
+                        <label style="font-weight:700; display:block; margin-top:15px; margin-bottom:5px;">Roblox User ID</label>
+                        <input type="text" name="roblox_id" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" required>
+                        <img src="${ASSETS.ID_TUTORIAL}" class="tutorial-img">
+
+                        <label style="font-weight:700; display:block; margin-top:15px; margin-bottom:5px;">Discord URL</label>
+                        <input type="text" name="discord_url" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;" required>
+                        <img src="${ASSETS.URL_TUTORIAL}" class="tutorial-img">
+                    </div>
+                    <div>
+                        <label style="font-weight:700; display:block; margin-bottom:10px;">Kart Tasarımı Seç (Showcase)</label>
+                        <div class="card-showcase-grid">
+                            <label class="showcase-item selected"><input type="radio" name="card_style" value="RED" checked style="display:none;"><img src="${CARDS.RED}"><center><small>KLASİK</small></center></label>
+                            <label class="showcase-item"><input type="radio" name="card_style" value="BLACK" style="display:none;"><img src="${CARDS.BLACK}"><center><small>SİYAH</small></center></label>
+                            <label class="showcase-item"><input type="radio" name="card_style" value="PATTERN" style="display:none;"><img src="${CARDS.PATTERN}"><center><small>DESENLİ</small></center></label>
+                        </div>
+                        <div style="background:#eee; padding:15px; border-radius:10px; font-size:12px; margin-top:20px;">
+                            <b>Bilgilendirme:</b><br>Eğer hesabınızı değiştirirseniz kartınızı iptal edip yeniden çıkartmanız gerekebilir.
+                        </div>
+                        <button class="btn-main" style="margin-top:20px;">KARTI ONAYLA VE ÇIKART</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    `, req.session.user, 'create'));
+});
+
+app.get('/my-cards', (req, res) => {
+    if (!req.session.user) return res.redirect('/');
+    const userCard = db_cards[req.session.user.id];
+    if (!userCard) return res.send(ui('<h2>Henüz bir kartın yok.</h2><a href="/create-card" class="btn-main" style="display:inline-block; width:auto; text-decoration:none; margin-top:20px;">Hemen Oluştur</a>', req.session.user, 'cards'));
+    
+    const headshot = `https://www.roblox.com/headshot-thumbnail/image?userId=${userCard.id}&width=420&height=420&format=png`;
+    res.send(ui(`
+        <div class="glass-panel" style="text-align:center;">
+            <h1>Dijital Kartlarım</h1>
+            <div class="passo-card-render">
+                <img src="${CARDS[userCard.style]}" style="width:100%;">
+                <div class="card-info-overlay">
+                    <img src="${headshot}" class="card-pfp" onerror="this.src='${ASSETS.FOUNDER}'">
+                    <div>
+                        <div style="font-size:18px; font-weight:900; text-transform:uppercase;">${userCard.name}</div>
+                        <div style="font-size:12px; opacity:0.8;">ROBLOX TARAFTAR KARTI</div>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top:20px; font-weight:700; color:#2e7d32;">DURUM: AKTİF</p>
+            <button onclick="location.href='/cancel-card'" style="background:#333; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; margin-top:20px;">KARTI İPTAL ET</button>
+        </div>
+    `, req.session.user, 'cards'));
+});
+
+app.post('/apply-card', (req, res) => {
+    if (!req.session.user) return res.redirect('/');
+    db_cards[req.session.user.id] = { name: req.body.roblox_name, id: req.body.roblox_id, style: req.body.card_style };
+    res.redirect('/my-cards');
+});
+
+app.get('/cancel-card', (req, res) => {
+    if (req.session.user) delete db_cards[req.session.user.id];
+    res.redirect('/create-card');
+});
 
 app.get('/api/auth/callback', async (req, res) => {
     const code = req.query.code;
@@ -151,117 +223,12 @@ app.get('/api/auth/callback', async (req, res) => {
         const tokenRes = await axios.post('https://discord.com/api/oauth2/token', new URLSearchParams({
             client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'authorization_code', code, redirect_uri: REDIRECT_URI
         }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-
-        const user = await axios.get('https://discord.com/api/users/@me', {
-            headers: { Authorization: `Bearer ${tokenRes.data.access_token}` }
-        });
+        const user = await axios.get('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${tokenRes.data.access_token}` } });
         req.session.user = user.data;
         res.redirect('/dashboard');
     } catch (e) { res.redirect('/'); }
 });
 
-app.get('/dashboard', (req, res) => {
-    if (!req.session.user) return res.redirect('/');
-    const user = req.session.user;
-    const userCard = db_cards[user.id];
-
-    if (!userCard) {
-        res.send(ui(`
-            <div class="hero-grid">
-                <div class="glass-card">
-                    <h2>Kart Başvurusu</h2>
-                    <form action="/apply-card" method="POST">
-                        <div class="form-group">
-                            <label>Roblox Kullanıcı Adı</label>
-                            <input type="text" name="roblox_name" placeholder="Örn: Xe1lea" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Roblox User ID</label>
-                            <input type="text" name="roblox_id" placeholder="ID'nizi girin" required>
-                            <a href="https://cdn.discordapp.com/attachments/1495543284423065662/1497935107258843247/image.png" target="_blank" style="font-size:12px; color:var(--primary); font-weight:700;">ID'mi Nasıl Bulurum?</a>
-                        </div>
-                        <div class="form-group">
-                            <label>Discord Profil URL</label>
-                            <input type="text" name="discord_url" placeholder="https://discord.com/users/..." required>
-                            <a href="https://cdn.discordapp.com/attachments/1495543284423065662/1497935416429383801/image.png" target="_blank" style="font-size:12px; color:var(--primary); font-weight:700;">URL'mi Nasıl Alırım?</a>
-                        </div>
-                        <div class="form-group">
-                            <label>Kart Tasarımı Seçin</label>
-                            <select name="card_style">
-                                <option value="RED">Klasik Kırmızı (Default)</option>
-                                <option value="BLACK">Asil Siyah</option>
-                                <option value="PATTERN">Özel Desenli</option>
-                            </select>
-                        </div>
-                        <div style="background:#fff4f4; padding:15px; border-radius:10px; font-size:13px; color:#b00; margin-bottom:15px; border:1px solid #fcc;">
-                            ⚠️ <b>Önemli Bilgi:</b> Roblox hesabınızı değiştirirseniz kartınız geçersiz sayılır. Bilgilerin doğruluğundan kullanıcı sorumludur.
-                        </div>
-                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                            <input type="checkbox" required style="width:auto;"> RoPasso Kullanım Şartlarını okudum, onaylıyorum.
-                        </label>
-                        <button class="btn-action">KARTIMI ÇIKART</button>
-                    </form>
-                </div>
-                <div style="text-align:center;">
-                    <img src="${ASSETS.LOGO}" style="width:100%; margin-bottom:20px; opacity:0.2;">
-                    <h3>Hızlı Destek</h3>
-                    <p style="font-size:14px; color:#666;">Bir sorun mu var? Discord sunucumuza gelerek yardım alabilirsin.</p>
-                </div>
-            </div>
-        `, user));
-    } else {
-        const cardImg = CARDS[userCard.style];
-        const headshot = `https://www.roblox.com/headshot-thumbnail/image?userId=${userCard.id}&width=420&height=420&format=png`;
-        
-        res.send(ui(`
-            <div class="hero-grid">
-                <div class="glass-card" style="text-align:center;">
-                    <h2 style="margin-bottom:5px;">Kartlarım</h2>
-                    <p style="margin-bottom:25px; font-size:14px; color:#666;">Aktif dijital kartınız aşağıdadır.</p>
-                    
-                    <div class="passo-card-preview" id="myCard" style="cursor:pointer;" onclick="alert('Kart Sahibi: ${userCard.name}\\nID: ${userCard.id}\\nDurum: Aktif')">
-                        <img src="${cardImg}" class="card-bg">
-                        <div class="card-user-info">
-                            <img src="${headshot}" class="card-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
-                            <div class="card-name">${userCard.name}</div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top:20px; font-size:14px; font-weight:700;">
-                        KART DURUMU: <span style="color:#2e7d32;">AKTİF</span>
-                    </div>
-                </div>
-                
-                <div class="glass-card">
-                    <h3>Bilet İşlemleri</h3>
-                    <p style="font-size:14px;">Şu an aktif bir maç bulunmamaktadır. Yeni maçlar yüklendiğinde buradan bilet alabilirsin.</p>
-                    <button class="btn-action" disabled>BİLETLERİMİ GÖR</button>
-                    <button class="btn-action" style="background:#333; margin-top:10px;" onclick="location.href='/cancel-card'">KARTI İPTAL ET</button>
-                </div>
-            </div>
-        `, user));
-    }
-});
-
-app.post('/apply-card', (req, res) => {
-    if (!req.session.user) return res.redirect('/');
-    const { roblox_name, roblox_id, card_style } = req.body;
-    db_cards[req.session.user.id] = {
-        name: roblox_name,
-        id: roblox_id,
-        style: card_style
-    };
-    res.redirect('/dashboard');
-});
-
-app.get('/cancel-card', (req, res) => {
-    if (req.session.user) delete db_cards[req.session.user.id];
-    res.redirect('/dashboard');
-});
-
-app.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/');
-});
+app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 
 module.exports = app;
