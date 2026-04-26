@@ -13,8 +13,8 @@ const LOGO_URL = "https://cdn.discordapp.com/attachments/1495543284423065662/149
 const DISCORD_ICON = "https://cdn.discordapp.com/attachments/1497741754777079829/1497743438798389268/39-393163_company-discord-logo-png-white-Photoroom.png?ex=69ef4a86&is=69edf906&hm=598c2232e1889a0024cd3a1c63f772b7cce2082d82773b2da9bd8140cecb0305&";
 const SITE_ICON = "https://cdn.discordapp.com/attachments/1495543284423065662/1497925916968620063/indir_1.png?ex=69ef4bb8&is=69edfa38&hm=ad460d965721a334d39ec82186fc986fbd90e38da1577826d2beb3a91116762c&";
 
-// GÜNCELLENMİŞ HESAP ERİŞİM LİNKİ (BOT EKLEME EKRANI ÇIKMAZ)
-const DISCORD_AUTH_URL = `https://discord.com/oauth2/authorize?client_id=1497727912978153482&response_type=code&redirect_uri=https%3A%2F%2Fropasso.vercel.app%2Fapi%2Fauth%2Fcallback&scope=identify+guilds.members.read+guilds`;
+// SADECE HESAP ERİŞİMİ İÇİN (Scope'lar temizlendi)
+const DISCORD_AUTH_URL = `https://discord.com/oauth2/authorize?client_id=1497727912978153482&response_type=code&redirect_uri=https%3A%2F%2Fropasso.vercel.app%2Fapi%2Fauth%2Fcallback&scope=identify+guilds`;
 
 const ui = (body) => `
 <!DOCTYPE html>
@@ -45,11 +45,9 @@ const ui = (body) => `
             box-shadow: 0 15px 35px rgba(0,0,0,0.08);
             border-bottom: 10px solid #e30613;
         }
-        .logo-wrap {
-            margin-bottom: 25px;
-        }
+        .logo-wrap { margin-bottom: 25px; }
         .main-logo { 
-            width: 240px; /* Dev gibi yaptık */
+            width: 240px; 
             height: auto; 
             filter: drop-shadow(0 5px 15px rgba(0,0,0,0.05));
         }
@@ -89,7 +87,7 @@ const ui = (body) => `
         }
         .user-box img { width: 55px; height: 55px; border-radius: 50%; margin-right: 15px; border: 3px solid #e30613; }
         .user-box .meta { display: flex; flex-direction: column; }
-        .user-box span { font-size: 11px; color: #e30613; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .user-box span { font-size: 11px; color: #e30613; font-weight: 800; text-transform: uppercase; }
         .user-box h3 { margin: 0; font-size: 20px; color: #1a1a1a; font-weight: 800; }
         
         select {
@@ -134,9 +132,10 @@ app.get('/login', (req, res) => {
 app.get('/api/auth/callback', async (req, res) => {
     const code = req.query.code;
     try {
+        // Vercel'deki DISCORD_TOKEN içine Client Secret'ı koyduğunu varsayıyoruz
         const response = await axios.post('https://discord.com/api/oauth2/token', new URLSearchParams({
             client_id: process.env.DISCORD_CLIENT_ID,
-            client_secret: process.env.DISCORD_TOKEN,
+            client_secret: process.env.DISCORD_TOKEN, 
             grant_type: 'authorization_code',
             code: code,
             redirect_uri: process.env.DISCORD_REDIRECT_URI,
@@ -149,7 +148,12 @@ app.get('/api/auth/callback', async (req, res) => {
         req.session.user = user.data;
         res.redirect('/dashboard');
     } catch (err) {
-        res.send("Hata: Giriş yetkisi alınamadı. Vercel Variables kısmını kontrol edin.");
+        // Hata durumunda teknik detayı basar, böylece sorunu anlarsın
+        res.status(500).send(`
+            <h3>Giriş Başarısız!</h3>
+            <p>Teknik Detay: ${err.response ? JSON.stringify(err.response.data) : err.message}</p>
+            <p>Vercel panelinde Client Secret'ın doğru olduğundan ve Redirect URI'nin eklendiğinden emin ol kanka.</p>
+        `);
     }
 });
 
@@ -165,9 +169,9 @@ app.get('/dashboard', (req, res) => {
                 <h3>${req.session.user.username}</h3>
             </div>
         </div>
-        <p>Biletinizi aktif etmek istediğiniz sunucuyu seçin.</p>
+        <p>Biletinizi aktif etmek istediğiniz stadyumu seçin.</p>
         <select>
-            <option>Bir Sunucu Seçin...</option>
+            <option>Bir Seçim Yapın...</option>
             <option>Eryaman Stadyumu</option>
         </select>
         <button class="btn">MAÇLARI LİSTELE</button>
