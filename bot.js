@@ -17,7 +17,7 @@ const client = new Client({
 
 // --- AYARLAR ---
 const TOKEN = process.env.DISCORD_TOKEN; 
-const GUILD_ID = "SUNUCU_ID_BURAYA"; // <--- BURAYA KENDİ SUNUCUNUN ID'SİNİ YAZ!
+const GUILD_ID = "1469661064697483343"; // <--- BURAYA KENDİ SUNUCUNUN ID'SİNİ YAZ!
 const PASSO_RED = "#E30613";
 
 const commands = [
