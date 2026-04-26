@@ -13,7 +13,7 @@ app.use(session({
 
 // GÜNCEL TOKENLI ASSETLER
 const ASSETS = {
-    LOGO: "https://cdn.discordapp.com/attachments/1495543284423065662/1497923776929599570/Gemini_Generated_Image_o1s4jao1s4jao1s4-removebg-preview.png",
+    LOGO: "https://cdn.discordapp.com/attachments/1495543284423065662/1497923776929599570/Gemini_Generated_Image_o1s4jao1s4jao1s4-removebg-preview.png?ex=69ef49ba&is=69edf83a&hm=907abaa3475f136cc06c14450bf639e3c3d355b398a8e30e7736e06ab4453ba3&",
     PASSO_NAV: "https://cdn.passo.com.tr/passotaraftar/public/logo.svg",
     DISCORD_WHITE: "https://cdn.discordapp.com/attachments/1497741754777079829/1497743438798389268/39-393163_company-discord-logo-png-white-Photoroom.png",
     FOUNDER: "https://cdn.discordapp.com/attachments/1495543284423065662/1497937318336528446/noFilter.png?ex=69ef5657&is=69ee04d7&hm=37c8c041ff65462ed29d619bbcdf8d7ea62c49b33e7b0669f1f59df86d06a4b2&",
