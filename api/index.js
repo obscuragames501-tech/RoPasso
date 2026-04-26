@@ -4,18 +4,24 @@ const session = require('express-session');
 const app = express();
 
 app.use(session({
-    secret: 'ropasso-final-secure-2026',
+    secret: 'ropasso-final-premium-2026',
     resave: false,
     saveUninitialized: false
 }));
 
+// ASSET VE LOGO TANIMLARI
 const LOGO_URL = "https://cdn.discordapp.com/attachments/1495543284423065662/1497923776929599570/Gemini_Generated_Image_o1s4jao1s4jao1s4-removebg-preview.png?ex=69ef49ba&is=69edf83a&hm=907abaa3475f136cc06c14450bf639e3c3d355b398a8e30e7736e06ab4453ba3&";
 const DISCORD_ICON = "https://cdn.discordapp.com/attachments/1497741754777079829/1497743438798389268/39-393163_company-discord-logo-png-white-Photoroom.png?ex=69ef4a86&is=69edf906&hm=598c2232e1889a0024cd3a1c63f772b7cce2082d82773b2da9bd8140cecb0305&";
 const SITE_ICON = "https://cdn.discordapp.com/attachments/1495543284423065662/1497925916968620063/indir_1.png?ex=69ef4bb8&is=69edfa38&hm=ad460d965721a334d39ec82186fc986fbd90e38da1577826d2beb3a91116762c&";
 
-// SADECE HESAP ERİŞİMİ İÇİN (Scope'lar temizlendi)
-const DISCORD_AUTH_URL = `https://discord.com/oauth2/authorize?client_id=1497727912978153482&response_type=code&redirect_uri=https%3A%2F%2Fropasso.vercel.app%2Fapi%2Fauth%2Fcallback&scope=identify+guilds`;
+// VERCEL DEĞİŞKENLERİ
+const CLIENT_ID = process.env.DISCORD_CLIENT_ID || "1497727912978153482";
+const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || "https://ropasso.vercel.app/api/auth/callback";
+const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 
+const DISCORD_AUTH_URL = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify+guilds`;
+
+// GELİŞTİRİLMİŞ KIRMIZI-BEYAZ UI TEMPLATE
 const ui = (body) => `
 <!DOCTYPE html>
 <html lang="tr">
@@ -23,94 +29,71 @@ const ui = (body) => `
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="${SITE_ICON}">
-    <title>RoPasso | Dijital Bilet</title>
+    <title>RoPasso | Dijital Bilet Sistemi</title>
     <style>
-        * { box-sizing: border-box; outline: none; transition: all 0.2s ease; }
+        :root { --primary: #e30613; --bg: #f4f7f6; }
+        * { box-sizing: border-box; outline: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         body { 
-            background-color: #f8f9fa; 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            margin: 0; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            min-height: 100vh;
+            background: linear-gradient(135deg, #fdfdfd 0%, #ebebeb 100%);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh;
         }
         .main-card { 
-            background: white; 
-            width: 100%; 
-            max-width: 420px; 
-            padding: 40px 30px; 
-            border-radius: 35px; 
-            text-align: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
-            border-bottom: 10px solid #e30613;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            width: 100%; max-width: 440px; padding: 50px 35px; border-radius: 40px;
+            text-align: center; box-shadow: 0 25px 50px -12px rgba(227, 6, 19, 0.15);
+            border: 1px solid rgba(227, 6, 19, 0.05);
+            position: relative; overflow: hidden;
         }
-        .logo-wrap { margin-bottom: 25px; }
-        .main-logo { 
-            width: 240px; 
-            height: auto; 
-            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.05));
+        .main-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: var(--primary);
         }
-        h2 { font-size: 28px; color: #1a1a1a; margin: 0 0 10px; font-weight: 800; letter-spacing: -0.5px; }
-        p { color: #6c757d; font-size: 16px; margin-bottom: 35px; line-height: 1.5; }
+        .logo-area { margin-bottom: 40px; }
+        .main-logo { width: 260px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1)); }
         
+        h2 { font-size: 32px; color: #111; margin: 0 0 12px; font-weight: 900; letter-spacing: -1px; }
+        p { color: #555; font-size: 16px; margin-bottom: 40px; font-weight: 500; }
+
         .btn { 
-            background: #e30613; 
-            color: white; 
-            padding: 18px; 
-            text-decoration: none; 
-            border-radius: 16px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: 700; 
-            font-size: 18px;
-            border: none;
-            width: 100%;
-            cursor: pointer;
-            box-shadow: 0 8px 20px rgba(227,6,19,0.2);
+            background: var(--primary); color: white; padding: 20px; text-decoration: none;
+            border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            font-weight: 750; font-size: 18px; border: none; width: 100%; cursor: pointer;
+            box-shadow: 0 10px 25px rgba(227, 6, 19, 0.3);
         }
-        .btn:hover { background: #c20510; transform: translateY(-2px); }
-        .btn img { height: 22px; margin-right: 12px; }
-        .btn.discord { background: #5865F2; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(88,101,242,0.2); }
-        .btn.discord:hover { background: #4752c4; }
+        .btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 30px rgba(227, 6, 19, 0.4); }
+        .btn:active { transform: scale(0.98); }
+        .btn img { height: 24px; margin-right: 14px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
         
-        .user-box {
-            background: #fff5f5;
-            padding: 20px;
-            border-radius: 22px;
-            display: flex;
-            align-items: center;
-            margin-bottom: 25px;
-            text-align: left;
-            border: 1px solid #ffebeb;
+        .btn.discord { background: #5865F2; box-shadow: 0 10px 25px rgba(88, 101, 242, 0.3); }
+        .btn.discord:hover { background: #4752c4; box-shadow: 0 15px 30px rgba(88, 101, 242, 0.4); }
+
+        .user-panel {
+            background: #fff; border-radius: 25px; padding: 25px; display: flex; align-items: center;
+            margin-bottom: 30px; text-align: left; border: 2px solid #f0f0f0; box-shadow: 0 5px 15px rgba(0,0,0,0.02);
         }
-        .user-box img { width: 55px; height: 55px; border-radius: 50%; margin-right: 15px; border: 3px solid #e30613; }
-        .user-box .meta { display: flex; flex-direction: column; }
-        .user-box span { font-size: 11px; color: #e30613; font-weight: 800; text-transform: uppercase; }
-        .user-box h3 { margin: 0; font-size: 20px; color: #1a1a1a; font-weight: 800; }
-        
+        .user-panel img { width: 65px; height: 65px; border-radius: 20px; margin-right: 20px; border: 4px solid var(--primary); }
+        .user-info span { display: block; font-size: 12px; color: var(--primary); font-weight: 900; letter-spacing: 2px; }
+        .user-info h3 { margin: 2px 0 0; font-size: 22px; color: #1a1a1a; font-weight: 800; }
+
         select {
-            width: 100%;
-            padding: 16px;
-            border-radius: 14px;
-            border: 2px solid #eee;
-            background: #fafafa;
-            color: #333;
-            font-size: 16px;
-            margin-bottom: 20px;
-            font-weight: 600;
+            width: 100%; padding: 18px; border-radius: 18px; border: 2px solid #eee;
+            background: #fff; color: #1a1a1a; font-size: 16px; margin-bottom: 25px;
+            font-weight: 700; cursor: pointer; -webkit-appearance: none;
         }
-        .footer-text { margin-top: 35px; color: #ced4da; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; }
+        select:focus { border-color: var(--primary); }
+
+        .footer { margin-top: 40px; color: #bbb; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+        .success-badge { display: inline-flex; align-items: center; background: #e8f5e9; color: #2e7d32; padding: 8px 16px; border-radius: 50px; font-size: 14px; font-weight: 800; margin-bottom: 20px; }
     </style>
 </head>
 <body>
     <div class="main-card">
-        <div class="logo-wrap">
+        <div class="logo-area">
             <img src="${LOGO_URL}" class="main-logo" alt="RoPasso">
         </div>
         ${body}
-        <div class="footer-text">ROPASSO DIGITAL SYSTEM 2026</div>
+        <div class="footer">ROPASSO DIGITAL TICKETING 2026</div>
     </div>
 </body>
 </html>`;
@@ -118,27 +101,26 @@ const ui = (body) => `
 app.get('/', (req, res) => {
     res.send(ui(`
         <h2>Hoş Geldiniz</h2>
-        <p>Maç biletlerinizi görüntülemek ve stadyuma giriş yapmak için hesabınızı doğrulayın.</p>
+        <p>Biletlerinize erişmek ve stadyum giriş yetkisi almak için hesabınızı bağlayın.</p>
         <a href="${DISCORD_AUTH_URL}" class="btn discord">
-            <img src="${DISCORD_ICON}"> Discord ile Bağlan
+            <img src="${DISCORD_ICON}"> Discord ile Kimlik Doğrula
         </a>
     `));
 });
 
-app.get('/login', (req, res) => {
-    res.redirect(DISCORD_AUTH_URL);
-});
+app.get('/login', (req, res) => res.redirect(DISCORD_AUTH_URL));
 
 app.get('/api/auth/callback', async (req, res) => {
     const code = req.query.code;
+    if (!CLIENT_SECRET) return res.status(500).send("HATA: DISCORD_CLIENT_SECRET Vercel'e eklenmemiş!");
+
     try {
-        // Vercel'deki DISCORD_TOKEN içine Client Secret'ı koyduğunu varsayıyoruz
         const response = await axios.post('https://discord.com/api/oauth2/token', new URLSearchParams({
-            client_id: process.env.DISCORD_CLIENT_ID,
-            client_secret: process.env.DISCORD_TOKEN, 
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
             grant_type: 'authorization_code',
             code: code,
-            redirect_uri: process.env.DISCORD_REDIRECT_URI,
+            redirect_uri: REDIRECT_URI,
         }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
 
         const user = await axios.get('https://discord.com/api/users/@me', {
@@ -148,12 +130,11 @@ app.get('/api/auth/callback', async (req, res) => {
         req.session.user = user.data;
         res.redirect('/dashboard');
     } catch (err) {
-        // Hata durumunda teknik detayı basar, böylece sorunu anlarsın
-        res.status(500).send(`
-            <h3>Giriş Başarısız!</h3>
-            <p>Teknik Detay: ${err.response ? JSON.stringify(err.response.data) : err.message}</p>
-            <p>Vercel panelinde Client Secret'ın doğru olduğundan ve Redirect URI'nin eklendiğinden emin ol kanka.</p>
-        `);
+        res.status(500).send(ui(`
+            <h2 style="color: #e30613;">Bağlantı Hatası!</h2>
+            <p>Vercel ayarlarındaki Client Secret veya Redirect URI geçersiz.</p>
+            <a href="/" class="btn">Tekrar Dene</a>
+        `));
     }
 });
 
@@ -162,19 +143,19 @@ app.get('/dashboard', (req, res) => {
     const avatar = req.session.user.avatar ? `https://cdn.discordapp.com/avatars/${req.session.user.id}/${req.session.user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
     
     res.send(ui(`
-        <div class="user-box">
+        <div class="success-badge">✓ SİSTEM DOĞRULANDI</div>
+        <div class="user-panel">
             <img src="${avatar}">
-            <div class="meta">
-                <span>Dijital Taraftar</span>
+            <div class="user-info">
+                <span>DİJİTAL TARAFTAR</span>
                 <h3>${req.session.user.username}</h3>
             </div>
         </div>
-        <p>Biletinizi aktif etmek istediğiniz stadyumu seçin.</p>
+        <p>Biletini aktif etmek istediğin stadyumu seçerek işlemlere devam et.</p>
         <select>
-            <option>Bir Seçim Yapın...</option>
             <option>Eryaman Stadyumu</option>
         </select>
-        <button class="btn">MAÇLARI LİSTELE</button>
+        <button class="btn" onclick="alert('Maçlar yakında listelenecek!')">MAÇLARI LİSTELE</button>
     `));
 });
 
