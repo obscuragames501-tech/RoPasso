@@ -6,26 +6,27 @@ const {
 const { REST } = require('@discordjs/rest');
 const express = require('express');
 
-// --- 1. 7/24 AKTİF TUTMA (EXPRESS) ---
+// --- 1. WEB SERVER (7/24 AKTİF TUTAR) ---
 const app = express();
 app.get('/', (req, res) => res.send('ROPasso Bot 7/24 Online!'));
-app.listen(process.env.PORT || 3000, () => console.log('🌐 Web Server Hazır.'));
+app.listen(process.env.PORT || 3000, () => console.log('🌐 Web sunucusu aktif.'));
 
 // --- 2. AYARLAR ---
 const CLIENT_ID = "1497727912978153482"; 
 const TOKEN = process.env.DISCORD_TOKEN; 
 const PASSO_RED = "#E30613";
+const PREFIX = "!"; // Slash çalışmazsa !setup yazabilirsin
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds, 
         GatewayIntentBits.GuildMessages, 
-        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.MessageContent, // Mesaj komutları için şart!
         GatewayIntentBits.GuildMembers
     ]
 });
 
-// --- 3. HAZIR KOMUTLAR (ÖNCEDEN YAZILDI) ---
+// --- 3. KOMUT TANIMLARI ---
 const readyCommands = [
     {
         name: 'setup',
@@ -40,7 +41,7 @@ const readyCommands = [
 
 // --- 4. KOMUTLARI SUNUCUYA ÇAKAN FONKSİYON ---
 async function forceDeploy(guildId) {
-    if (!TOKEN) return;
+    if (!TOKEN) return console.log("❌ TOKEN EKSİK!");
     const rest = new REST({ version: '10' }).setToken(TOKEN);
     try {
         await rest.put(
@@ -49,7 +50,7 @@ async function forceDeploy(guildId) {
         );
         console.log(`✅ Komutlar Sunucuya Basıldı: ${guildId}`);
     } catch (e) {
-        console.error(`❌ Hata: ${guildId}`);
+        console.error(`❌ Komut Basma Hatası: ${e.message}`);
     }
 }
 
@@ -58,33 +59,54 @@ client.once('ready', async () => {
     console.log(`🚀 ROPasso Aktif: ${client.user.tag}`);
     client.user.setActivity('Roblox Stadyumlarını', { type: ActivityType.Watching });
 
-    // Botun olduğu her sunucuda hem komut bas hem de mesaj at
     client.guilds.cache.forEach(async (guild) => {
-        // 1. Komutları saniyeler içinde aktif et
         await forceDeploy(guild.id);
 
-        // 2. Bot "Buradayım" Mesajı Atsın
+        // Bot girdiğinde bir kanala "Ben Buradayım" mesajı atar
         const channel = guild.channels.cache.find(ch => 
             ch.type === 0 && ch.permissionsFor(guild.members.me).has(PermissionFlagsBits.SendMessages)
         );
         
         if (channel) {
-            const buradayim = new EmbedBuilder()
-                .setTitle("✅ ROPasso Online!")
-                .setDescription("Bot başarıyla aktif edildi. `/setup` komutu saniyeler içinde aktif olacaktır.\n\nEğer komutları hala göremiyorsan **Discord'u Yenile (Ctrl + R)**.")
-                .setColor(PASSO_RED);
-            channel.send({ embeds: [buradayim] }).catch(() => null);
+            const onlineEmbed = new EmbedBuilder()
+                .setTitle("✅ ROPasso Sistemi Aktif!")
+                .setDescription("JavaScript motoru başarıyla çalışıyor. \n\n🔹 **Slash Komutları:** `/setup` \n🔹 **Alternatif:** `!setup` (Slash gözükmezse kullanın)")
+                .setColor(PASSO_RED)
+                .setTimestamp();
+            channel.send({ embeds: [onlineEmbed] }).catch(() => null);
         }
     });
 });
 
-// --- 6. ETKİLEŞİM YÖNETİMİ ---
+// --- 6. MESAJ KOMUTLARI (SLASH ÇALIŞMAZSA DİYE SİGORTA) ---
+client.on('messageCreate', async (message) => {
+    if (message.author.bot || !message.content.startsWith(PREFIX)) return;
+
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+
+    if (command === 'setup' && message.member.permissions.has(PermissionFlagsBits.Administrator)) {
+        const panel = new EmbedBuilder()
+            .setTitle('🏟️ ROPasso Yönetim Paneli')
+            .setDescription('Etkinlik oluşturmak için aşağıdaki butonları kullanın.')
+            .setColor(PASSO_RED);
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('m_kur').setLabel('Maç Kur').setStyle(ButtonStyle.Danger).setEmoji('⚽'),
+            new ButtonBuilder().setCustomId('k_kur').setLabel('Konser Kur').setStyle(ButtonStyle.Secondary).setEmoji('🎤')
+        );
+
+        message.channel.send({ embeds: [panel], components: [row] });
+    }
+});
+
+// --- 7. SLASH ETKİLEŞİM YÖNETİMİ ---
 client.on('interactionCreate', async interaction => {
     if (interaction.isChatInput()) {
         if (interaction.commandName === 'setup') {
             const panel = new EmbedBuilder()
                 .setTitle('🏟️ ROPasso Yönetim Paneli')
-                .setDescription('Sunucu etkinliklerini biletlemek için butonları kullan.')
+                .setDescription('Etkinlik oluşturmak için aşağıdaki butonları kullanın.')
                 .setColor(PASSO_RED);
 
             const row = new ActionRowBuilder().addComponents(
@@ -94,21 +116,16 @@ client.on('interactionCreate', async interaction => {
 
             await interaction.reply({ embeds: [panel], components: [row] });
         }
-        
-        if (interaction.commandName === 'yardim') {
-            await interaction.reply({ content: "📖 **/setup** yazarak yönetim panelini açabilirsin.", ephemeral: true });
-        }
     }
 
-    // Buton ve Modal İşlemleri
     if (interaction.isButton()) {
         const isMatch = interaction.customId === 'm_kur';
         const modal = new ModalBuilder()
             .setCustomId(isMatch ? 'modal_m' : 'modal_k')
-            .setTitle(isMatch ? 'Maç Planla' : 'Konser Planla');
+            .setTitle(isMatch ? '⚽ Maç Planla' : '🎤 Konser Planla');
 
         modal.addComponents(
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('t').setLabel("Etkinlik Başlığı").setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('t').setLabel("Başlık").setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('d').setLabel("Tarih").setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('l').setLabel("Oyun Linki").setStyle(TextInputStyle.Short).setRequired(true))
         );
@@ -116,7 +133,7 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (interaction.isModalSubmit()) {
-        await interaction.reply({ content: "✅ Etkinlik başarıyla oluşturuldu!", ephemeral: true });
+        await interaction.reply({ content: "✅ İşlem başarılı! Etkinlik sisteme kaydedildi.", ephemeral: true });
     }
 });
 
