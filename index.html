@@ -30,6 +30,7 @@
             background-color: var(--discord-blue); color: white; border: none; width: 100%; padding: 16px;
             border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer;
             display: flex; align-items: center; justify-content: center; gap: 12px; transition: 0.3s;
+            text-decoration: none; /* Link olursa bozulmasın */
         }
 
         .btn-discord img { width: 28px; height: 28px; object-fit: contain; }
@@ -44,7 +45,7 @@
         }
 
         .user-info { display: flex; align-items: center; gap: 15px; }
-        .user-info img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--passo-red); }
+        .user-info img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--passo-red); background: #eee; }
         .wallet { color: #28a745; font-size: 13px; font-weight: bold; }
 
         .bot-promo {
@@ -164,21 +165,23 @@
         const hoverSnd = document.getElementById('hover-sound');
 
         function handleLogin() {
-            clickSnd.play();
+            try { clickSnd.play(); } catch(e) {}
             const clientID = '1497727912978153482';
-            // Vercel linkini buraya yazdım
-            const redirect = encodeURIComponent('https://ropasso.vercel.app/');
+            const redirect = encodeURIComponent(window.location.origin + '/'); // Dinamik URL tespiti
             window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientID}&redirect_uri=${redirect}&response_type=token&scope=identify+guilds`;
         }
 
         window.onload = () => {
             const hash = new URLSearchParams(window.location.hash.slice(1));
-            const token = hash.get('access_token') || localStorage.getItem('ropasso_token');
+            let token = hash.get('access_token');
 
             if (token) {
                 localStorage.setItem('ropasso_token', token);
-                window.location.hash = "";
+                window.history.replaceState({}, document.title, window.location.pathname); // URL'deki tokeni gizler
                 showDashboard(token);
+            } else {
+                const savedToken = localStorage.getItem('ropasso_token');
+                if (savedToken) showDashboard(savedToken);
             }
         };
 
@@ -190,14 +193,19 @@
                 const res = await fetch('https://discord.com/api/users/@me', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                
+                if (!res.ok) throw new Error("Token geçersiz");
+                
                 const data = await res.json();
                 
-                if (data.username) {
-                    document.getElementById('u-name').innerText = data.username;
+                document.getElementById('u-name').innerText = data.username;
+                if (data.avatar) {
                     document.getElementById('u-avatar').src = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`;
+                } else {
+                    document.getElementById('u-avatar').src = "https://cdn.discordapp.com/embed/avatars/0.png";
                 }
             } catch (e) { 
-                console.error("Kullanıcı verisi alınamadı, token süresi dolmuş olabilir."); 
+                console.error("Giriş hatası:", e); 
                 localStorage.removeItem('ropasso_token');
                 document.getElementById('login-screen').style.display = 'block';
                 document.getElementById('dashboard').style.display = 'none';
@@ -207,10 +215,7 @@
         function toggleDrop(id) {
             const el = document.getElementById(id);
             const isVisible = el.style.display === 'block';
-            
-            // Diğerlerini kapat
             document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
-            
             el.style.display = isVisible ? 'none' : 'block';
         }
 
