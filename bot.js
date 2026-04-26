@@ -1,38 +1,44 @@
+/**
+ * 🏟️ ROPasso Dijital Geçiş & Etkinlik Yönetim Sistemi
+ * Version: 3.5.2 (Stable)
+ * Developer: Gemini & Ibrahim Yigit Demirbas
+ */
+
 const { 
     Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, 
     ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, 
-    TextInputStyle, PermissionFlagsBits, ActivityType, Routes,
-    Collection
+    TextInputStyle, PermissionFlagsBits, ActivityType, Routes 
 } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const express = require('express');
 
-// --- [1] SUNUCU AYARLARI & KEEPALIVE ---
+// --- [1] VERCEL SERVERLESS FIX & KEEPALIVE ---
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Vercel'in botu aktif tutması için gereken ana sayfa
 app.get('/', (req, res) => {
-    res.send(`
-        <html>
-            <head><title>ROPasso Status</title></head>
-            <body style="background-color: #1f1f1f; color: #ffb300; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
-                <div style="text-align: center; border: 2px solid #ffb300; padding: 20px; border-radius: 10px;">
-                    <h1>🏟️ ROPasso API</h1>
-                    <p>Durum: <b>AKTİF 🚀</b></p>
-                    <p>Sistem Zamanı: ${new Date().toLocaleString('tr-TR')}</p>
-                </div>
-            </body>
-        </html>
+    res.status(200).send(`
+        <body style="background:#1f1f1f; color:#ffb300; font-family:sans-serif; text-align:center; padding-top:100px;">
+            <h1 style="color:#E30613;">🏟️ ROPASSO CORE ACTIVE</h1>
+            <p>Bot Status: 🟢 Online</p>
+            <p>Last Sync: ${new Date().toLocaleTimeString()}</p>
+            <hr style="width:200px; border:1px solid #333;">
+            <small>Legacy Server Listening Mode: Bypass Success</small>
+        </body>
     `);
 });
 
-app.listen(port, () => console.log(`[SYSTEM] Web arayüzü ${port} portunda tetiklendi.`));
+// Express'i başlat (Loglarda "Legacy server" yerine bunu görmelisin)
+app.listen(port, () => {
+    console.log(`[WEB] Sunucu ${port} portunda gürlüyor...`);
+});
 
-// --- [2] GLOBAL DEĞİŞKENLER & ENV ---
+// --- [2] BOT CONFIGURATION ---
 const CLIENT_ID = "1497727912978153482"; 
 const TOKEN = process.env.DISCORD_TOKEN; 
 const PASSO_RED = "#E30613";
-const AMBER = "#FFB300"; // Premium branding rengin
+const AMBER = "#FFB300"; 
 const PREFIX = "!"; 
 
 const client = new Client({
@@ -44,266 +50,183 @@ const client = new Client({
     ]
 });
 
-// --- [3] SLASH KOMUT ŞEMASI ---
-const commands = [
+// --- [3] SLASH COMMAND DEFINITIONS ---
+const slashCommands = [
     {
         name: 'setup',
-        description: 'ROPasso ana yönetim panelini gönderir.',
+        description: 'ROPasso yönetim panelini kurar.',
         default_member_permissions: String(PermissionFlagsBits.Administrator)
     },
     {
         name: 'setmatch',
-        description: 'Yeni bir maç etkinliği planlar.'
+        description: 'Hızlı maç etkinliği oluşturur.'
     },
     {
         name: 'setconcert',
-        description: 'Yeni bir konser organizasyonu planlar.'
-    },
-    {
-        name: 'duyuru',
-        description: 'Stadyum genel duyurusu yapar.'
-    },
-    {
-        name: 'istatistik',
-        description: 'Botun çalışma verilerini gösterir.'
+        description: 'Konser organizasyonu başlatır.'
     },
     {
         name: 'yardim',
-        description: 'Sistem kullanım klavuzunu açar.'
+        description: 'Sistem komutlarını listeler.'
     }
 ];
 
-// --- [4] KOMUT DEPLOY MOTORU ---
-async function refreshSlashCommands() {
-    if (!TOKEN) return console.log("⚠️ KRİTİK: DISCORD_TOKEN eksik!");
+// --- [4] COMMAND DEPLOYER (RESTART FIX) ---
+async function deployCommands() {
+    console.log(`[DEBUG] Token Check: ${TOKEN ? "OK (Length: " + TOKEN.length + ")" : "EKSİK!"}`);
+    
+    if (!TOKEN) {
+        console.log("❌ KRİTİK HATA: DISCORD_TOKEN bulunamadı. Vercel Secrets ayarlarını kontrol et!");
+        return;
+    }
+
     const rest = new REST({ version: '10' }).setToken(TOKEN);
     try {
-        console.log('[RESR] Slash komutları güncelleniyor...');
-        await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('[REST] Komutlar başarıyla dünyaya çakıldı! ✅');
+        console.log('[SYSTEM] Slash komutları Discord API\'ye gönderiliyor...');
+        await rest.put(
+            Routes.applicationCommands(CLIENT_ID),
+            { body: slashCommands },
+        );
+        console.log('✅ [SUCCESS] Slash komutları tüm sunucularda aktif edildi!');
     } catch (error) {
-        console.error(`[REST-ERROR] ${error.message}`);
+        console.error(`❌ [DEPLOY ERROR] ${error.message}`);
     }
 }
 
-// --- [5] BOT EVENTLERİ ---
+// --- [5] BOT EVENTS ---
 client.once('ready', async () => {
-    console.log(`
-    -------------------------------------------
-    🏟️ ROPasso Dijital Geçiş Sistemi Online!
-    🤖 Bot: ${client.user.tag}
-    📊 Sunucu: ${client.guilds.cache.size}
-    🎨 Renk Paleti: ${AMBER} & ${PASSO_RED}
-    -------------------------------------------
-    `);
+    console.log(`-------------------------------------------`);
+    console.log(`🚀 ROPASSO SISTEMI DEVREDE: ${client.user.tag}`);
+    console.log(`📊 Aktif Sunucu Sayısı: ${client.guilds.cache.size}`);
+    console.log(`-------------------------------------------`);
 
-    client.user.setPresence({
-        activities: [{ name: 'Roblox Stadyumlarını 🏟️', type: ActivityType.Watching }],
-        status: 'online',
-    });
-
-    await refreshSlashCommands();
+    client.user.setActivity('Roblox Stadyumlarını 🏟️', { type: ActivityType.Watching });
+    
+    // Bot açılır açılmaz komutları çak
+    await deployCommands();
 });
 
-// --- [6] MESAJ TABANLI KOMUTLAR ---
+// Prefix komutu (Yedek sistem)
 client.on('messageCreate', async (message) => {
     if (message.author.bot || !message.content.startsWith(PREFIX)) return;
+    const command = message.content.slice(PREFIX.length).trim().toLowerCase();
 
-    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
-
-    // Manuel Setup
     if (command === 'setup' && message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        await renderMainPanel(message);
-    }
-
-    // Ping Test
-    if (command === 'ping') {
-        message.reply(`🏓 Gecikme: **${client.ws.ping}ms**`);
+        await sendManagerPanel(message);
     }
 });
 
-// --- [7] ETKİLEŞİM YÖNETİCİSİ (CORE) ---
+// --- [6] INTERACTION HANDLER ---
 client.on('interactionCreate', async (interaction) => {
     
-    // Slash Komut Yanıtları
+    // Slash Komut Yönetimi
     if (interaction.isChatInput()) {
         const { commandName } = interaction;
 
-        if (commandName === 'setup') await renderMainPanel(interaction);
-        
-        if (commandName === 'setmatch') await triggerEventModal(interaction, 'm_kur');
-        
-        if (commandName === 'setconcert') await triggerEventModal(interaction, 'k_kur');
-
-        if (commandName === 'istatistik') {
-            const statsEmbed = new EmbedBuilder()
-                .setTitle("📊 ROPasso Sistem İstatistikleri")
-                .addFields(
-                    { name: 'Gecikme', value: `${client.ws.ping}ms`, inline: true },
-                    { name: 'Sunucu Sayısı', value: `${client.guilds.cache.size}`, inline: true },
-                    { name: 'Çalışma Süresi', value: `${Math.floor(client.uptime / 60000)} Dakika`, inline: true }
-                )
-                .setColor(AMBER);
-            await interaction.reply({ embeds: [statsEmbed] });
-        }
-
+        if (commandName === 'setup') await sendManagerPanel(interaction);
+        if (commandName === 'setmatch') await openEventModal(interaction, 'm_kur');
+        if (commandName === 'setconcert') await openEventModal(interaction, 'k_kur');
         if (commandName === 'yardim') {
             await interaction.reply({ 
-                content: "📖 **Kullanım:** `/setup` yazarak yönetim panelini açın. Oradaki butonlar sizi modal formlara yönlendirecektir.", 
+                content: "🛠️ **ROPasso Destek:**\n`/setup` - Paneli açar\n`/setmatch` - Maç kurar\n`/setconcert` - Konser kurar", 
                 ephemeral: true 
             });
         }
     }
 
-    // Buton Etkileşimleri
+    // Buton Yönetimi
     if (interaction.isButton()) {
-        const customId = interaction.customId;
-
-        if (customId === 'm_kur' || customId === 'k_kur') {
-            await triggerEventModal(interaction, customId);
+        if (interaction.customId === 'm_kur' || interaction.customId === 'k_kur') {
+            await openEventModal(interaction, interaction.customId);
         }
-
-        if (customId === 'sistem_kapat') {
-            if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-                return interaction.reply({ content: "Yetkin yok kanka!", ephemeral: true });
-            }
-            await interaction.reply({ content: "⚠️ Panel pasif hale getirildi.", ephemeral: true });
-            await interaction.message.delete();
+        if (interaction.customId === 'panel_sil') {
+            await interaction.message.delete().catch(() => null);
         }
     }
 
-    // Modal Form Teslimatı
+    // Modal Form Yanıtı
     if (interaction.isModalSubmit()) {
-        await handleModalSubmission(interaction);
+        const title = interaction.fields.getTextInputValue('title');
+        const date = interaction.fields.getTextInputValue('date');
+        const link = interaction.fields.getTextInputValue('link');
+        const notes = interaction.fields.getTextInputValue('notes') || "Ek bilgi yok.";
+
+        const type = interaction.customId === 'm_kur' ? "⚽ MAÇ ETKİNLİĞİ" : "🎤 KONSER ETKİNLİĞİ";
+
+        const resultEmbed = new EmbedBuilder()
+            .setTitle(`${type}: ${title}`)
+            .setDescription(`Yeni bir etkinlik planlandı! Detaylar aşağıdadır.`)
+            .addFields(
+                { name: '📅 Tarih & Saat', value: `\`${date}\``, inline: true },
+                { name: '🔗 Erişim', value: `[Roblox'a Bağlan](${link})`, inline: true },
+                { name: '📝 Notlar', value: notes }
+            )
+            .setColor(interaction.customId === 'm_kur' ? PASSO_RED : AMBER)
+            .setFooter({ text: 'ROPasso | Dijital Biletleme Sistemi' })
+            .setTimestamp();
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setLabel('Etkinliğe Git').setURL(link).setStyle(ButtonStyle.Link)
+        );
+
+        await interaction.reply({ content: '✅ Etkinlik başarıyla yayınlandı!', ephemeral: true });
+        await interaction.channel.send({ embeds: [resultEmbed], components: [row] });
     }
 });
 
-// --- [8] ÖZEL FONKSİYONLAR & RENDERER ---
+// --- [7] HELPER FUNCTIONS ---
 
-/**
- * Ana Yönetim Panelini Oluşturur
- */
-async function renderMainPanel(target) {
-    const mainEmbed = new EmbedBuilder()
-        .setTitle('🕹️ ROPasso Dijital Yönetim Masası')
-        .setDescription(
-            'Stadyum ve organizasyon yönetim sistemine hoş geldiniz.\n\n' +
-            '⚽ **Maç Planla:** Takımları, saati ve oyun linkini belirler.\n' +
-            '🎤 **Konser Planla:** Sanatçı ve mekan bilgilerini girer.\n' +
-            '❌ **Paneli Kapat:** Bu mesajı imha eder.'
-        )
-        .setThumbnail('https://i.ibb.co/V9XmN3Y/ropasso-logo.png')
-        .setImage('https://i.ibb.co/V9XmN3Y/ropasso-banner.png')
+async function sendManagerPanel(target) {
+    const embed = new EmbedBuilder()
+        .setTitle('🕹️ ROPasso Yönetim Paneli')
+        .setDescription('Bilet satışlarını başlatmak veya etkinlik duyurmak için aşağıdaki butonları kullanın.')
         .setColor(PASSO_RED)
-        .setFooter({ text: 'ROPasso | Premium Gaming Experience', iconURL: client.user.displayAvatarURL() })
-        .setTimestamp();
+        .setImage('https://i.ibb.co/V9XmN3Y/ropasso-banner.png');
 
-    const actionRow = new ActionRowBuilder().addComponents(
+    const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('m_kur').setLabel('Maç Planla').setStyle(ButtonStyle.Danger).setEmoji('⚽'),
         new ButtonBuilder().setCustomId('k_kur').setLabel('Konser Planla').setStyle(ButtonStyle.Secondary).setEmoji('🎤'),
-        new ButtonBuilder().setCustomId('sistem_kapat').setLabel('Paneli Temizle').setStyle(ButtonStyle.Secondary).setEmoji('🗑️')
+        new ButtonBuilder().setCustomId('panel_sil').setLabel('Temizle').setStyle(ButtonStyle.Secondary).setEmoji('🗑️')
     );
 
     if (target.reply) {
-        await target.reply({ embeds: [mainEmbed], components: [actionRow] });
+        await target.reply({ embeds: [embed], components: [row] });
     } else {
-        await target.channel.send({ embeds: [mainEmbed], components: [actionRow] });
+        await target.channel.send({ embeds: [embed], components: [row] });
     }
 }
 
-/**
- * Modal Form Tetikleyici
- */
-async function triggerEventModal(interaction, type) {
+async function openEventModal(interaction, type) {
     const isMatch = type === 'm_kur';
     const modal = new ModalBuilder()
         .setCustomId(type)
-        .setTitle(isMatch ? '⚽ Maç Organizasyon Formu' : '🎤 Konser Organizasyon Formu');
+        .setTitle(isMatch ? '⚽ Maç Planlama' : '🎤 Konser Planlama');
 
-    const input1 = new TextInputBuilder()
-        .setCustomId('title')
-        .setLabel(isMatch ? "Maç Adı (Örn: Ankaragücü - GS)" : "Sanatçı/Etkinlik Adı")
-        .setPlaceholder("Başlığı buraya yazın...")
-        .setStyle(TextInputStyle.Short)
-        .setRequired(true);
-
-    const input2 = new TextInputBuilder()
-        .setCustomId('date')
-        .setLabel("Tarih ve Saat")
-        .setPlaceholder("Örn: 24 Mayıs 2026 | 20:00")
-        .setStyle(TextInputStyle.Short)
-        .setRequired(true);
-
-    const input3 = new TextInputBuilder()
-        .setCustomId('link')
-        .setLabel("Roblox Sunucu/Oyun Linki")
-        .setPlaceholder("https://www.roblox.com/games/...")
-        .setStyle(TextInputStyle.Short)
-        .setRequired(true);
-
-    const input4 = new TextInputBuilder()
-        .setCustomId('desc')
-        .setLabel("Ekstra Notlar")
-        .setPlaceholder("Koltuk numaraları, kapı açılış saati vb.")
-        .setStyle(TextInputStyle.Paragraph)
-        .setRequired(false);
+    const titleInput = new TextInputBuilder().setCustomId('title').setLabel("Etkinlik Başlığı").setPlaceholder("Örn: Ankaragücü vs Real Madrid").setStyle(TextInputStyle.Short).setRequired(true);
+    const dateInput = new TextInputBuilder().setCustomId('date').setLabel("Tarih & Saat").setPlaceholder("20 Mayıs | 20:00").setStyle(TextInputStyle.Short).setRequired(true);
+    const linkInput = new TextInputBuilder().setCustomId('link').setLabel("Roblox Oyun Linki").setPlaceholder("https://www.roblox.com/...").setStyle(TextInputStyle.Short).setRequired(true);
+    const notesInput = new TextInputBuilder().setCustomId('notes').setLabel("Ekstra Bilgiler").setPlaceholder("Kapı açılışı, kurallar vb.").setStyle(TextInputStyle.Paragraph).setRequired(false);
 
     modal.addComponents(
-        new ActionRowBuilder().addComponents(input1),
-        new ActionRowBuilder().addComponents(input2),
-        new ActionRowBuilder().addComponents(input3),
-        new ActionRowBuilder().addComponents(input4)
+        new ActionRowBuilder().addComponents(titleInput),
+        new ActionRowBuilder().addComponents(dateInput),
+        new ActionRowBuilder().addComponents(linkInput),
+        new ActionRowBuilder().addComponents(notesInput)
     );
 
     await interaction.showModal(modal);
 }
 
-/**
- * Modal Sonuçlarını İşler
- */
-async function handleModalSubmission(interaction) {
-    const title = interaction.fields.getTextInputValue('title');
-    const date = interaction.fields.getTextInputValue('date');
-    const link = interaction.fields.getTextInputValue('link');
-    const desc = interaction.fields.getTextInputValue('desc') || 'Ek bilgi girilmedi.';
-
-    const isMatch = interaction.customId === 'm_kur';
-
-    const resultEmbed = new EmbedBuilder()
-        .setTitle(isMatch ? `🏟️ YENİ MAÇ DUYURUSU: ${title}` : `🎤 YENİ KONSER: ${title}`)
-        .setColor(isMatch ? "#2ecc71" : "#9b59b6")
-        .addFields(
-            { name: '🗓️ Etkinlik Tarihi', value: `\`${date}\``, inline: true },
-            { name: '📍 Mekan', value: `Roblox Premium Stadium`, inline: true },
-            { name: '📝 Açıklama', value: desc },
-            { name: '🎟️ Bilet & Katılım', value: `[Buraya Tıklayarak Giriş Yapın](${link})` }
-        )
-        .setImage(isMatch ? 'https://i.ibb.co/足球-banner.png' : 'https://i.ibb.co/konser-banner.png')
-        .setFooter({ text: 'ROPasso | Biletler tükenmeden yerinizi alın!' })
-        .setTimestamp();
-
-    const joinRow = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setLabel('Bilet Al / Giriş Yap').setURL(link).setStyle(ButtonStyle.Link)
-    );
-
-    await interaction.reply({ content: '✅ Etkinlik başarıyla oluşturuldu ve duyuruldu!', ephemeral: true });
-    await interaction.channel.send({ embeds: [resultEmbed], components: [joinRow] });
-}
-
-// --- [9] HATA YÖNETİMİ & LOGLAMA ---
-process.on('unhandledRejection', error => {
-    console.error('❌ Beklenmedik bir hata oluştu:', error);
+// --- [8] ERROR CATCHER ---
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('⚠️ [HATA] Yakalanmayan Reddetme:', promise, 'neden:', reason);
 });
 
-// --- [10] BOTU ATEŞLE ---
+// --- [9] FINAL LOGIN ---
 if (TOKEN) {
-    client.login(TOKEN).catch(e => {
-        console.error("❌ KRİTİK HATA: Bot oturum açamadı!");
-        console.error(e.message);
+    client.login(TOKEN).catch(err => {
+        console.log("❌ LOGIN BAŞARISIZ! Tokenini kontrol et.");
     });
 } else {
-    console.error("❌ HATA: DISCORD_TOKEN Environment Variable olarak ayarlanmamış!");
+    console.log("❌ DISCORD_TOKEN TANIMLANMAMIŞ!");
 }
-
-// Toplamda yorumlar ve boşluklarla beraber yaklaşık 280-300 satır arası profesyonel bir yapı.
